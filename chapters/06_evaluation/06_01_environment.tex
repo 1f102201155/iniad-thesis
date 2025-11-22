@@ -1,0 +1,87 @@
+\section{実験環境}
+本節では，評価に用いたハードウェア構成，ソフトウェア構成，
+LLM モデルと利用期間，ネットワーク環境，
+および評価対象データについて述べる。
+
+%---------- ハードウェア構成 ---------------
+\subsection{ハードウェア構成}
+評価実験には，Table~\ref{tab:eval-hw} に示す構成の PC を用いた。
+LLM 呼び出し，OpenAPI 仕様生成，コード生成はすべてこの環境で実行した。
+
+\begin{table}[h]
+  \centering
+  \caption{評価に用いたハードウェア構成}
+  \label{tab:eval-hw}
+  \begin{tabular}{|l|l|}
+    \hline
+    項目   & 内容 \\ \hline
+    CPU   & 12th Gen Intel(R) Core(TM) i7-12650H \\ \hline
+    GPU   & NVIDIA GeForce MX550 \\ \hline
+    メモリ & 32\,GB \\ \hline
+    OS    & Windows 11 \\ \hline
+    実行環境 & PowerShell 7.5.4 \\ \hline
+  \end{tabular}
+\end{table}
+
+%---------- ソフトウェア構成 ---------------
+\subsection{ソフトウェア構成}
+主要な開発環境およびミドルウェアのバージョンを
+Table~\ref{tab:eval-sw} に示す。
+本研究で開発した CLI ツール(auto-iot)は Node.js 上で動作し，
+LLM の呼び出しや OpenAPI Generator の起動を内部で行う。
+
+\begin{table}[h]
+  \centering
+  \caption{評価に使用した主なソフトウェア環境}
+  \label{tab:eval-sw}
+  \begin{tabular}{|l|l|}
+    \hline
+    項目 & バージョン・内容 \\ \hline
+    Python & 3.12.10 \\ \hline
+    Node.js & 23.5.0 \\ \hline
+    パッケージマネージャ & npm(npx 経由で CLI 実行) \\ \hline
+    OpenAPI Generator & 7.17.0\footnotemark[1] \\ \hline
+    Auto-IoT CLI(本研究ツール) & version 0.1.0 \\ \hline
+  \end{tabular}
+\end{table}
+
+\footnotetext[1]{以下のコマンドにより Java 版 OpenAPI Generator のバージョンを確認した。
+\texttt{npx @openapitools/openapi-generator-cli version} の実行時に
+バイナリが自動的にダウンロードされ，7.17.0 が選択されたことを確認している。}
+
+%---------- LLMモデルおよび利用期間 ---------------
+\subsection{LLM モデルおよび利用期間}
+本研究では OpenAI 社の Chat Completions API を用いて LLM 呼び出しを行った。
+評価対象としたモデルは以下の 2 つである。
+
+\begin{itemize}
+  \item GPT-4o
+  \item GPT-4o-mini
+\end{itemize}
+
+API 呼び出しは 2025 年 10 月 27 日から 11 月 5 日までの期間に実施し，
+この期間に提供されていた最新版のモデルを使用した。
+
+%---------- 評価対象データと実行条件 ---------------
+\subsection{評価対象データと実行条件}
+評価対象として，10 種類の家電製品の取扱説明書(PDF ファイル)を収集した。
+各マニュアルに対し，以下の手順で評価データを準備した。
+
+また，本研究では各マニュアルに対して \textbf{3 回ずつ} API 生成処理(generate-doc)を実行した。
+そのため，評価に用いた生成結果は \textbf{合計 30 件} となる。
+
+\begin{enumerate}
+  \item 各家電のマニュアル PDF を 1 件ずつ用意する。
+  \item CLI サブコマンド \texttt{init-bot-map} により
+        \texttt{switchbot.map.json} の雛形を生成する。
+  \item appliance, button, mode などの項目を手動で補完し，
+        マニュアルに記載されたボタン・操作と整合するよう編集する。
+\end{enumerate}
+
+本研究では SwitchBot Bot の実機を十分に用意できなかったため，
+クラウド API を介して実際に家電を操作する評価は行っていない。
+ただし，本研究の目的は
+\textbf{API 仕様生成とコード生成が正しく行われているかを検証することであり，
+家電の実動作結果は SwitchBot API やデバイス側の仕様に依存するため，
+本研究の評価対象外である}。
+そのため，本章では仕様・フローの整合性および生成コードの起動性に基づいて評価を行う。

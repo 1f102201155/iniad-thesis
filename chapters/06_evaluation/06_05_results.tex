@@ -1,0 +1,22 @@
+\section{結果}
+
+\subsection{評価結果の概要}
+
+Table~\ref{tab:eval-summary} に，GPT-4o と GPT-4o-mini の評価結果を示す。
+
+\begin{table}[h]
+  \centering
+  \caption{GPT-4o と GPT-4o-mini の評価結果比較}
+  \label{tab:eval-summary}
+  \renewcommand{\arraystretch}{1.2}
+  \begin{tabular}{|l|c|c|}
+    \hline
+    評価項目 & GPT-4o & GPT-4o-mini \\ \hline
+    生成成功率(Success Rate) & 93.33\% & 70.00\% \\ \hline
+    操作フロー整合性(F1) & 0.597 & 0.813 \\ \hline
+    アプリ起動性 & 100\% & 100\% \\ \hline
+    生成時間 & 23.57\,s & 31.10\,s \\ \hline
+    生成一貫性(Consistency Score) & 0.538 & 0.575 \\ \hline
+    トークン効率(平均) & 41,020 tokens/run & 34,302 tokens/run \\ \hline
+  \end{tabular}
+\end{table}

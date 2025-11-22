@@ -1,24 +1,60 @@
 \documentclass[bachelor]{INIAD}%卒論用 
 \addtolength{\footskip}{8mm}
-\bibliographystyle{jplain} 
+\bibliographystyle{junsrt} 
 %\usepackage[dviout]{graphicx}
 \usepackage[dvipdfmx]{graphicx}
 \usepackage{bm}
 \usepackage{amsmath}
 \usepackage{ascmac}
+\usepackage[dvipdfmx]{hyperref}
+\usepackage{pxjahyper}
+\usepackage[inline,shortlabels]{enumitem}
+
+% 論文作成時にToDoなどのメモを残すためのもの。後で消すこと
+% --- draftトグル：最終版では \draftfalse にする ---
+\newif\ifdraft
+\draftfalse
+\ifdraft
+  % todonotes（すでに読み込み済みでなければこのままでOK）
+  \usepackage{tikz}
+  \usepackage[colorinlistoftodos,prependcaption,textsize=footnotesize]{todonotes}
+  \setlength{\marginparwidth}{22mm}
+  \newcommand{\todoinline}[2]{\todo[inline,color=#1!20]{#2}}
+\else
+  % 非ドラフト時は無効化
+  \newcommand{\todoinline}[2]{}
+\fi
+
+% --- 状態バッジ（日本語・インライン） ---
+\newcommand{\needrewrite}[1][]{\todoinline{orange}{\textbf{要書換}\ifx#1\empty\else：#1\fi}}
+\newcommand{\needappend}[1][]{\todoinline{yellow}{\textbf{要追記}\ifx#1\empty\else：#1\fi}}
+\newcommand{\needremove}[1][]{\todoinline{red}{\textbf{要削除}\ifx#1\empty\else：#1\fi}}
+\newcommand{\needreview}[1][]{\todoinline{blue}{\textbf{要見直し}\ifx#1\empty\else：#1\fi}}
+
+% 参考文献がまだのとき
+\newcommand{\citenote}[1][]{\todoinline{purple}{\textbf{要引用}\ifx#1\empty\else：#1\fi}}
+
+% 図・表・数式のプレースホルダ
+\newcommand{\figtodo}[1][]{\todoinline{gray}{\textbf{図の準備}\ifx#1\empty\else：#1\fi}}
+\newcommand{\tabtodo}[1][]{\todoinline{gray}{\textbf{表の準備}\ifx#1\empty\else：#1\fi}}
+\newcommand{\eqtodo}[1][]{\todoinline{gray}{\textbf{数式の整備}\ifx#1\empty\else：#1\fi}}
+
+% 章・節の粒度で未完をマーク
+\newcommand{\sectodo}[1][]{\todoinline{brown}{\textbf{この節は下書き}\ifx#1\empty\else：#1\fi}}
+% --- ここまでTodo用 ---
 
 %\usepackage{geometry}
 %\geometry{left=30mm,right=30mm,top=35mm,bottom=30mm}
 
 %\documentclass[oneside]{suribt}% 本文が * ページ以下のときに (掲示に注意)
-\title{象の卵生についての研究}
+\title{LLMとOpenAPI Generatorを用いた家電向けIoT APIの自動生成}
 %\titlewidth{}% タイトル幅 (指定するときは単位つきで)
-\author{東洋 太郎}
-\eauthor{Taro Toyo}% Copyright 表示で使われる
-\studentid{1F99999999}
-\supervisor{赤羽台 花子 教授}% 1つの引数をとる (役職まで含めて書く)
+\author{大友 裕太}
+\eauthor{Yuta Otomo}% Copyright 表示で使われる
+\studentid{1F10220115}
+\supervisor{矢代 武嗣 教授}% 1つの引数をとる (役職まで含めて書く)
 %\supervisor{指導教員名 役職 \and 指導教員名 役職}% 複数教員の場合，\and でつなげる
-\handin{2021}{1}% 提出月. 2 つ (年, 月) 引数をとる
+\handin{2026}{1}% 提出月. 2 つ (年, 月) 引数をとる
 %\keywords{キーワード1, キーワード2} % 概要の下に表示される
 \renewcommand{\baselinestretch}{1.25}
 \setcounter{tocdepth}{2}
@@ -36,7 +72,20 @@
 %\end{eabstract}
 
 \begin{abstract}%%%%%%%%%%%%% 概要 %%%%%%%%
- ここには論文要旨を記述します。論文要旨の書き方については、指導教員の指導を受けること。
+\needrewrite
+本研究では、IoTデバイスの操作APIを自動生成するためのシステムを提案・実装した。
+近年、家庭用や産業用のIoTデバイスが普及し、各機器に対応するAPIを個別に設計・実装する必要が生じている。
+しかし、従来の手法では、製品マニュアルをもとに開発者が手作業でAPI仕様書を作成し、コードを実装するため、多大な工数と人為的誤りのリスクが存在した。
+
+本研究では、大規模言語モデル（Large Language Model; LLM）とOpenAPI Generatorを組み合わせることで、
+家電製品のマニュアルからAPI仕様および実装コードを自動生成するパイプラインを構築した。
+具体的には、SwitchBot製デバイスを対象に、マニュアル文書とデバイスマップ（\texttt{switchbot.map.json}）を入力とし、
+LLMにより中間表現（Intermediate Representation; IR）を生成する。
+このIRからOpenAPI仕様書（YAML/JSON）およびデバイス制御フロー定義を自動的に合成し、さらにOpenAPI GeneratorによりFlaskサーバのスタブコードを生成する。最終的に、生成された制御フローに基づいてSwitchBot制御コードを自動挿入することで、完全なIoT APIサーバを生成可能とした。
+
+評価実験では、生成精度・再現性・生成時間・実行可能性などの観点から本手法を検証した。
+その結果、マニュアル内容に対応するAPI仕様を高精度に生成でき、開発者が行う作業を大幅に削減できることを確認した。
+本システムは、将来的に他のIoTデバイスやメーカー製品への拡張も可能であり、マニュアルベースのAPI自動生成における有効なアプローチとなることを示した。
 \end{abstract}
 
 %%%%%%%%%%%%% 目次 %%%%%%%%
@@ -49,18 +98,22 @@
 
 \mainmatter% ここから本文 %%% 本文 %%%%%%%%
 
-\include{01_intro}     % はじめに
-\include{02_related}   % 関連研究
-\include{03_proposed}  % 提案手法
-
-% 以降、実装や評価、結論などの章を適切に配置してください
+\include{chapters/01_introduction}    % 第1章 序論
+\include{chapters/02_related_works}   % 第2章 関連研究および技術的背景
+\include{chapters/03_proposed_method} % 第3章 提案手法
+\include{chapters/04_system_design}   % 第4章 システム設計
+\include{chapters/05_implementation}  % 第5章 実装
+\include{chapters/06_evaluation/06_evaluation}      % 第6章 評価実験
+\include{chapters/07_discussion}      % 第7章 考察および今後の課題
+\include{chapters/08_conclusion}      % 第8章 結論
+\appendix
 
 \backmatter% ここから後付
-\include{80_ack}           % 謝辞
+\include{chapters/80_ack}             % 謝辞
 
 \bibliography{thesis.bib}  % 参考文献
 
 \appendix% ここから付録 %%%%% 付録 %%%%%%%
-\include{90_appendix}      % 付録
+\include{chapters/appendix} % 付録
 
 \end{document}
