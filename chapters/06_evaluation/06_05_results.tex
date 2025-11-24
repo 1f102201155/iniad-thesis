@@ -1,22 +1,130 @@
-\section{結果}
+\section{実験結果}
+\label{sec:experimental_results}
 
-\subsection{評価結果の概要}
+本節では、生成成功率、操作フローの正確性、生成の一貫性、生成時間、およびトークン効率の観点から実験結果を詳述する。
 
-Table~\ref{tab:eval-summary} に，GPT-4o と GPT-4o-mini の評価結果を示す。
+\subsection{生成成功率}
+各モデルにおける生成成功率（構文エラーなく実行可能なコードが生成された割合）を表\ref{tab:success_rate}に示す。
+GPT-4o は 30 回の試行中 28 回成功し、約 93.3\% という高い成功率を記録した。
+一方、GPT-4o-mini の成功率は 70.0\% に留まった。
+失敗の主な原因は、出力された JSON の形式不備（カンマの欠落やネスト構造の誤り）であり、
+複雑なスキーマ定義を遵守する能力に関しては、ハイエンドモデルである GPT-4o が優位であることが確認された。
 
-\begin{table}[h]
+\begin{table}[htbp]
   \centering
-  \caption{GPT-4o と GPT-4o-mini の評価結果比較}
-  \label{tab:eval-summary}
-  \renewcommand{\arraystretch}{1.2}
-  \begin{tabular}{|l|c|c|}
+  \caption{モデルごとの生成成功率}
+  \label{tab:success_rate}
+  \begin{tabular}{l|rrr}
     \hline
-    評価項目 & GPT-4o & GPT-4o-mini \\ \hline
-    生成成功率(Success Rate) & 93.33\% & 70.00\% \\ \hline
-    操作フロー整合性(F1) & 0.597 & 0.813 \\ \hline
-    アプリ起動性 & 100\% & 100\% \\ \hline
-    生成時間 & 23.57\,s & 31.10\,s \\ \hline
-    生成一貫性(Consistency Score) & 0.538 & 0.575 \\ \hline
-    トークン効率(平均) & 41,020 tokens/run & 34,302 tokens/run \\ \hline
+    モデル & 試行回数 & 成功回数 & 成功率 \\
+    \hline \hline
+    GPT-4o & 30 & 28 & 93.3\% \\
+    GPT-4o-mini & 30 & 21 & 70.0\% \\
+    \hline
   \end{tabular}
 \end{table}
+
+\subsection{操作フローの正確性}
+\subsubsection{操作抽出の適合率・再現率}
+生成に成功したケースを対象に、抽出された操作フロー（\texttt{steps}）の正確性を評価した。
+表\ref{tab:flow_accuracy_detail}に、True Positive (TP)、False Positive (FP)、False Negative (FN) の内訳および、それらに基づく適合率（Precision）、再現率（Recall）、F1 スコアを示す。
+
+\begin{table}[htbp]
+  \centering
+  \caption{操作フロー抽出の混同行列および精度評価}
+  \label{tab:flow_accuracy_detail}
+  \begin{tabular}{l|rrr|rrr}
+    \hline
+    モデル & TP & FP & FN & Precision & Recall & F1-score \\
+    \hline \hline
+    GPT-4o & 66 & 36 & 53 & 0.647 & 0.555 & 0.597 \\
+    GPT-4o-mini & \textbf{76} & \textbf{12} & \textbf{23} & \textbf{0.864} & \textbf{0.768} & \textbf{0.813} \\
+    \hline
+  \end{tabular}
+\end{table}
+
+表\ref{tab:flow_accuracy_detail}から読み取れる通り、\textbf{GPT-4o-mini が GPT-4o を大きく上回る F1 スコア (0.813) を記録した}。
+具体的な内訳を見ると、以下の特徴が挙げられる。
+
+\begin{itemize}
+  \item \textbf{GPT-4o の課題}: FN（抽出漏れ）が 53 件と非常に多い。これは、マニュアルに記載されている操作の約半数を見落としていることを意味する。また、FP（過剰抽出）も 36 件あり、存在しない操作を誤って生成する傾向も見られた。
+  \item \textbf{GPT-4o-mini の特性}: FP が 12 件、FN が 23 件といずれも低い値に抑えられている。これは、マニュアルの記述に対して忠実であり、かつ必要な操作を網羅的に抽出できていることを示している。
+\end{itemize}
+
+一般にパラメータ数が多いモデルの方が性能が高いとされるが、特定のフォーマットに従って情報を抽出する本タスクにおいては、軽量モデルである GPT-4o-mini の方が高い抽出能力を示した。
+
+\subsubsection{ステップ順序の正確性}
+抽出された操作（TP）において、ボタンを押す順序などのステップ構成が正しいかを検証した。
+[cite\_start]両モデルともに、ステップ順序の正確性は非常に高く、GPT-4o で 0.94、GPT-4o-mini で 0.95 であった [cite: 3]。
+これは、一度操作を正しく認識できれば、その具体的な手順（ステップ）については、どちらのモデルもマニュアルの記述通りに正確に生成できることを示唆している。
+
+\subsection{生成の一貫性}
+同一のマニュアルを入力とした際の出力の安定性（フロー一致率）を表\ref{tab:consistency}に示す。
+GPT-4o-mini の平均一致率は 0.609 となり、GPT-4o (0.462) よりも高い一貫性を示した。
+GPT-4o は表現力が豊かである反面、試行ごとに操作名の命名（例: \texttt{turnOn} と \texttt{powerOn} の揺らぎなど）や手順の解釈が変動しやすい傾向があると考えられる。
+
+\begin{table}[htbp]
+  \centering
+  \caption{生成結果の一貫性（フロー一致率）}
+  \label{tab:consistency}
+  \begin{tabular}{l|r}
+    \hline
+    モデル & 平均一致率 \\
+    \hline \hline
+    GPT-4o & 0.462 \\
+    GPT-4o-mini & \textbf{0.609} \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{生成時間}
+表\ref{tab:generation_time}に平均生成時間を示す。
+本実験環境においては、GPT-4o が約 23.6 秒、GPT-4o-mini が約 31.1 秒となり、GPT-4o の方が高速に処理を完了した。
+後述するトークン数の内訳に基づくと、GPT-4o-mini は出力トークン数が非常に多いため、生成にかかるレイテンシが増大したと考えられる。
+
+\begin{table}[htbp]
+  \centering
+  \caption{平均生成時間}
+  \label{tab:generation_time}
+  \begin{tabular}{l|r}
+    \hline
+    モデル & 平均時間 (秒) \\
+    \hline \hline
+    GPT-4o & \textbf{23.57} \\
+    GPT-4o-mini & 31.10 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{トークン効率}
+1回のドライバ生成プロセスにおける平均消費トークン数の内訳（入力プロンプト、出力完了、合計）を表\ref{tab:token_breakdown}に示す。
+一般に、軽量モデルである GPT-4o-mini はコスト効率に優れるとされるが、本研究においては、**GPT-4o の方がより少ないトークン数で処理を完了できる**という結果が得られた。
+
+\begin{table}[htbp]
+  \centering
+  \caption{平均消費トークン数の内訳 (Tokens/run)}
+  \label{tab:token_breakdown}
+  \begin{tabular}{l|rrr}
+    \hline
+    モデル & Input Tokens & Output Tokens & Total Tokens \\
+    \hline \hline
+    GPT-4o & \textbf{33,729} & \textbf{702} & \textbf{34,431} \\
+    GPT-4o-mini & 40,160 & 860 & 41,020 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+表\ref{tab:token_breakdown} の内訳に基づき、以下の特性が確認された。
+
+\begin{itemize}
+  \item \textbf{Input Tokens}: 
+  同一のマニュアル（PDF）を入力しているにもかかわらず、GPT-4o (33,729) は GPT-4o-mini (40,160) と比較して約 16\% 少ないトークン数で入力を処理している。
+  これは、GPT-4o のトークナイザが、日本語の技術文書や PDF に含まれる特殊文字に対して、より高い圧縮効率を持っていることを示唆している。
+
+  \item \textbf{Output Tokens}:
+  出力においても、GPT-4o (702) は GPT-4o-mini (860) より約 18\% 少ないトークン数で生成を完了している。
+  両モデルともに構文的に正しい JSON を生成しようとするが、GPT-4o の方がより簡潔で無駄のない記述を行う能力に長けていると考えられる。
+\end{itemize}
+
+以上の結果から、単価（Cost per Token）においては GPT-4o-mini が安価であるが、処理するトークン総量（Volume）においては GPT-4o が効率的であることが明らかになった。
+システム全体のレイテンシや、コンテキストウィンドウの消費を抑える観点では、ハイエンドモデルである GPT-4o の利用が有利に働くケースが存在するといえる。

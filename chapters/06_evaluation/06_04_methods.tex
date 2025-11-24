@@ -1,150 +1,34 @@
-\section{評価方法}
-本節では、前節で定義した6つの評価項目について、
-実際にどのような基準と手順で評価を行ったかを説明する。
+\section{実験設定}
+\label{sec:methods}
 
-\subsection{生成成功率の評価方法}
-生成成功率は、generate-docからimplementまでの一連のコマンドが成功するかを評価したものである。
-以下のいずれかの条件がすべてを満たした場合を成功とした。
+本節では、評価実験に用いたデータセット、比較対象モデル、および正解データの作成方法について述べる。
 
-\begin{itemize}
-  \item generate-doc が例外なく終了すること
-  \item gneerate-api が例外なく終了すること
-  \item 生成されたopenapi.yamlが構文的に正しいこと(YAML パーサで検証)
-\end{itemize}
+\subsection{データセットと試行回数}
+評価対象として、SwitchBot 社製のスマート家電および関連デバイスの取扱説明書（PDF 形式）10 件を使用した。
+対象デバイスには、物理ボット（スイッチ）、カーテン開閉装置、温湿度計、スマートプラグ、加湿器などが含まれ、
+マニュアルの記述量や操作の複雑度は多岐にわたる。
+各 PDF ファイルには \texttt{test01} から \texttt{test10} までの ID を付与し、実験の入力データとした。
 
-\subsection{操作フロー整合性の評価方法}
-操作フロー整合性は、生成されたAPI仕様及び、
-flow.jsonがマニュアルに記載された操作とどの程度一致しているかを測定する指標である。
+LLM の出力には確率的な揺らぎが含まれるため、単一の試行ではモデルの性能を正確に評価できない可能性がある。
+そこで本実験では、各 PDF に対して同一条件で 3 回ずつ生成を試行した。
+したがって、1 モデルあたりの総試行回数は 30 回（10 ファイル $\times$ 3 回）、
+2 モデル合計で 60 回の生成実験を行った。
 
-\begin{enumerate}
-  \item \textbf{操作 API の正誤判定(TP/FP/FN)}  
-        マニュアルから手動で作成した正解集合(ゴールドセット)と比較し，
-        必要な API が生成されたか(TP)，
-        不要な API が混入したか(FP)，
-        必要な API が欠落しているか(FN)を判定した。
-
-  \item \textbf{構造整合性(Step Order Accuracy)}  
-        TP と判定された API について，
-        操作ステップ数・順序，targetLabel，操作タイプ(press/on/off)が
-        マニュアルと一致しているかを評価した。
-
-  \item \textbf{Precision・Recall・F1 によるモデル性能比較}  
-        \[
-        Precision = \frac{TP}{TP + FP},\quad
-        Recall = \frac{TP}{TP + FN},\quad
-        F1 = 2\frac{Precision \cdot Recall}{Precision + Recall}
-        \]
-        を算出し，GPT-4o と GPT-4o-mini の性能を比較した。
-\end{enumerate}
-
-\subsection{アプリ起動性の評価方法}
-アプリ起動性は、生成された Flask サーバコードが  
-追加修正なしに起動可能かどうかを評価するため、
+\subsection{比較対象モデル}
+本実験では、性能特性の異なる以下の 2 つのモデルを用いて比較を行った。
 
 \begin{itemize}
-  \item python -m openapi\_server がエラーなく起動するかを確認
+  \item \textbf{GPT-4o}:
+  OpenAPI が提供するハイエンドモデル。
+  複雑な推論や文脈理解に優れており、マニュアルの微細な記述や複雑な条件分岐を正確に解釈する能力が期待される。
+  \item \textbf{GPT-4o-mini}:
+  GPT-4o の軽量版モデル。
+  低コストかつ高速なレスポンスが特徴であるが、複雑な推論能力においては GPT-4o に劣る可能性がある。
+  本研究では、IoT ドライバ生成という特定タスクにおいて、軽量モデルがどの程度実用的な性能を発揮できるかを検証する。
 \end{itemize}
 
-という基準で判定した。  
-
-\subsection{生成時間の評価方法}
-
-生成時間(Generation Time)は、以下の処理を連続で実行した際の経過時間を測定した。
-
-\begin{itemize}
-  \item generate-doc による IR 生成およびテンプレ合成
-  \item generate-api によるコード生成
-  \item implement によるコードの実装
-\end{itemize}
-
-各マニュアルについて3回ずつ測定し、計30件の結果から  
-モデルごとの平均時間を算出した。
-
-\subsection{生成一貫性(Generation Consistency)の評価方法}
-
-生成一貫性は，\textbf{同一のマニュアル PDF に対して複数回 API 生成処理を実行したとき，
-LLM によって生成される \texttt{flow.json} の構造がどの程度安定して再現されるか} を評価する指標である。
-
-本研究では、1つのマニュアルに対して3回生成を行い、
-得られた3件の \texttt{flow.json} を \(F^{(1)}, F^{(2)}, F^{(3)}\) とする。
-このうち \(F^{(1)}\) を基準とし、\((F^{(1)}, F^{(2)})\)、\((F^{(1)}, F^{(3)})\) の2組のペアについて
-構造的一致度スコアを計算し、その平均を当該マニュアルの生成一貫性スコアとした。
-同様の手順を10種類のマニュアルに対して行い、その平均値をモデルの生成一貫性として用いる。
-
-ペア \((F^{(a)}, F^{(b)})\) のスコアは、flow 単位の一致度を平均することで求める。
-\(F^{(a)}\) に含まれる flow の集合を \(\mathcal{F}_a\)、\(F^{(b)}\) に含まれる集合を \(\mathcal{F}_b\) とし、
-要素数をそれぞれ \(|\mathcal{F}_a|\), \(|\mathcal{F}_b|\) とおく。
-このとき、ペアのスコア \(S_{\mathrm{pair}}(F^{(a)}, F^{(b)})\) は
-
-\[
-S_{\mathrm{pair}}(F^{(a)}, F^{(b)}) =
-\frac{1}{N}
-\sum_{f \in \mathcal{F}_a} S_{\mathrm{flow}}(f, \mathrm{match}(f)),
-\quad
-N = \max(|\mathcal{F}_a|, |\mathcal{F}_b|)
-\]
-
-で定義する。
-ここで \(\mathrm{match}(f)\) は、\(\mathcal{F}_b\) のうち \(f\) と同じ operationId を持つ flow が存在する場合にはその flow、
-存在しない場合には「欠落 flow」とみなしてスコア 0 を与えることを表す。
-
-各 flow ペア \((f_1, f_2)\) のスコア \(S_{\mathrm{flow}}(f_1, f_2)\) は、
-operationId の一致と steps 構造の一致度を統合して次のように定義する。
-
-まず、operationId の一致に対して重み 0.4 を与える。
-
-\[
-S_{\mathrm{op}} =
-\begin{cases}
-0.4, & \text{if } \mathrm{operationId}(f_1) = \mathrm{operationId}(f_2) \\
-0,   & \text{otherwise}
-\end{cases}
-\]
-
-operationId が一致しない場合は根本的に別の操作とみなし、
-\(S_{\mathrm{flow}}(f_1, f_2) = 0\) とする。
-
-次に、\(f_1\) と \(f_2\) に含まれるステップ列をそれぞれ
-\(\mathrm{steps}_1 = (\sigma^{(1)}_1, \dots, \sigma^{(1)}_{L_1})\),
-\(\mathrm{steps}_2 = (\sigma^{(2)}_1, \dots, \sigma^{(2)}_{L_2})\) とする。
-ここで \(\sigma^{(j)}_i\) は i 番目のステップ (type と targetLabel を含む構造) を表す。
-比較に用いる長さ \(L\) を
-
-\[
-L = \max(L_1, L_2)
-\]
-
-とし、先頭から \(\min(L_1, L_2)\) 個のステップを 1 対 1 に対応付けて比較する。
-i 番目のステップの一致度 \(s_i\) は次のように定義する。
-
-\[
-s_i =
-\begin{cases}
-1.0, & \text{if } \sigma^{(1)}_i = \sigma^{(2)}_i \\
-0.5, & \text{if } \mathrm{type}(\sigma^{(1)}_i) = \mathrm{type}(\sigma^{(2)}_i)
-        \text{ and } \mathrm{targetLabel}(\sigma^{(1)}_i) = \mathrm{targetLabel}(\sigma^{(2)}_i) \\
-0,   & \text{otherwise}
-\end{cases}
-\]
-
-このとき、ステップ列全体の一致度 \(S_{\mathrm{steps}}\) を
-
-\[
-S_{\mathrm{steps}} =
-\frac{1}{L} \sum_{i=1}^{\min(L_1, L_2)} s_i
-\]
-
-と定義する。
-\(\min(L_1, L_2)\) 個以降の「余ったステップ」は \(s_i = 0\) とみなされるため、
-ステップ数の差が大きい場合にはスコアが低下する。
-
-最後に、flow 単位のスコア \(S_{\mathrm{flow}}(f_1, f_2)\) を
-
-\[
-S_{\mathrm{flow}}(f_1, f_2)
-= S_{\mathrm{op}} + 0.6 \cdot S_{\mathrm{steps}}
-\]
-
-と定義する。
-これにより、operationId の一致(0.4)と steps 構造の一致(最大 0.6)を合わせて、
-1件の flow ペアあたり 0.0〜1.0 の範囲でスコアを与える。
+\subsection{正解データの作成}
+「操作フローの正確性」を評価するために、各マニュアルの内容を精査し、期待される API 操作定義（正解データ）を手動で作成した。
+正解データには、各デバイスで可能な操作（例: 「電源ON」「音量アップ」）と、その操作を実行するために必要なステップ（例: 「対象デバイスIDを指定して \texttt{turnOn} コマンドを送信」）を定義している。
+生成された結果と比較する際は、操作名（Operation ID）の表記ゆれを許容しつつ、
+実行されるステップの構成要素（コマンドの種類、対象パラメータ）が論理的に一致しているかを判定基準とした。
