@@ -1,0 +1,63 @@
+\section{プロジェクト構成}
+\label{sec:impl_structure}
+
+本システムのソースコードおよびリソースのディレクトリ構成概要を Fig.~\ref{fig:dir-structure} に示す。
+設計の関心事を分離するため，
+ユーザーインターフェースとなる CLI 定義 (\texttt{src/cli})，
+コアロジックとなるサービス層 (\texttt{src/app/services})，
+およびコード生成用のテンプレート (\texttt{templates}) を明確に分割した構成としている。
+
+\begin{figure}[tb]
+\begin{verbatim}
+auto-iot/
+├── src/
+│   ├── app/
+│   │   └── services/       # ビジネスロジック層 (Core Logic)
+│   │       ├── doc.ts        # Phase 1: マニュアル解析・IR生成 (Analyzer)
+│   │       ├── generator.ts  # Phase 3: スタブ生成制御 (Synthesizer)
+│   │       ├── implement.ts  # Phase 3: ロジック注入 (Injector)
+│   │       └── init-bot-map.ts
+│   ├── cli/                # プレゼンテーション層 (CLI Definitions)
+│   │   ├── index.ts          # エントリーポイント
+│   │   ├── cmd-generate-doc.ts
+│   │   ├── cmd-implement.ts
+│   │   └── ...
+│   ├── domain/             # ドメイン定義
+│   │   └── generator-registry.ts
+│   ├── integrations/       # 外部システム連携
+│   │   └── switchbot/        # SwitchBot 関連の型定義等
+│   └── lib/                # 共通ユーティリティ
+│       ├── openai.ts         # OpenAI API 呼び出しラッパー
+│       ├── logger.ts         # ロギング (pino)
+│       └── errors.ts         # エラー定義
+├── templates/
+│   └── python-flask/       # コード生成用 Mustache テンプレート
+│       ├── controller.mustache
+│       ├── __extras__/       # 生成後にコピーされる追加ファイル群
+│       │   └── openapi_server/
+│       │       └── integrations/
+│       │           └── switchbot_driver.py # 共通ドライバ
+│       └── ...
+├── package.json
+├── tsconfig.json
+└── openapitools.json       # Generator 設定
+\end{verbatim}
+\caption{Auto-IoT システムのディレクトリ構成}
+\label{fig:dir-structure}
+\end{figure}
+
+\subsection{モジュールの役割}
+\begin{itemize}
+  \item \textbf{src/app/services/}:
+  システムの核となるロジックが集約されているディレクトリである。
+  特に \texttt{doc.ts} は LLM との対話および中間表現の操作を行い，
+  \texttt{implement.ts} は生成されたコードへのパッチ適用（ロジック注入）を担当する。
+
+  \item \textbf{templates/python-flask/}:
+  OpenAPI Generator が使用する Mustache 形式のテンプレートファイル群である。
+  標準の Flask テンプレートをベースにしつつ，
+  ロジック注入に必要なマーカーコメント（\texttt{\# [AUTOIOT-FUNCTION-BEGIN]} 等）が
+  自動的に出力されるようカスタマイズを加えている。
+  また，\texttt{\_\_extras\_\_} ディレクトリには，生成コマンド完了後に
+  出力先へそのままコピーされる静的ファイル（SwitchBot ドライバ等）を配置している。
+\end{itemize}

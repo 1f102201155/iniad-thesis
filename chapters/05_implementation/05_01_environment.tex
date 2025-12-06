@@ -1,0 +1,31 @@
+\section{開発環境と技術選定}
+\label{sec:impl_env}
+
+本システムは，開発効率と型安全性，および非同期処理の扱いやすさを考慮し，
+メインの CLI ツールを TypeScript (Node.js) で実装した。
+また，生成されるサーバサイドコードのターゲットとして，IoT 分野で広く利用され，
+ライブラリのエコシステムが豊富な Python (Flask) を採用した。
+
+具体的な開発環境および使用した主要ライブラリのバージョンを Table~\ref{tab:dev-env} に示す。
+
+\begin{table}[h]
+  \centering
+  \caption{開発環境と主要ライブラリ}
+  \label{tab:dev-env}
+  \begin{tabular}{|l|l|p{6.5cm}|}
+    \hline
+    カテゴリ & 名称 & バージョン・備考 \\ \hline
+    \textbf{Runtime} & Node.js & v23.5.0 \\ \hline
+    \textbf{Language} & TypeScript & v5.8.3 \\ \hline
+    \textbf{Core Libs} & commander & v13.1.0 (CLI フレームワーク) \\ \cline{2-3}
+     & openai & v4.80.0 (LLM API クライアント) \\ \cline{2-3}
+     & pdf-parse & v1.1.1 (PDF テキスト抽出) \\ \cline{2-3}
+     & @openapitools/\newline openapi-generator-cli & v2.16.3 (Java 版 Generator のラッパー) \\ \hline
+    \textbf{Target} & Python & 3.12 (生成されたコードの実行環境) \\ \cline{2-3}
+     & Flask & 3.1.0 (Web フレームワーク) \\ \hline
+  \end{tabular}
+\end{table}
+
+特に \texttt{@openapitools/openapi-generator-cli} は，
+内部で Java 製の OpenAPI Generator (v7.17.0) をダウンロードして実行する仕組みとなっており，
+これを利用することで最新の OpenAPI 仕様 (v3.0.3) に準拠したコード生成を実現している。

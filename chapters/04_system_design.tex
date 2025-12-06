@@ -1,0 +1,97 @@
+\chapter{システム設計}
+\label{chap:system_design}
+
+本章では，前章で提案した手法を具現化する自動生成システム「Auto-IoT」の詳細設計について述べる。
+本システムは TypeScript (Node.js) で実装された CLI ツールであり，
+LLM と決定論的アルゴリズムを密に連携させることで，マニュアル入力からコード生成までを実行する。
+
+\section{ソフトウェア・アーキテクチャ}
+\figtodo
+システムの全体構成を図\ref{fig:architecture}に示す。
+本システムは以下の 3 つのモジュールによって構成される。
+
+\needrewrite
+\begin{enumerate}
+  \item \textbf{Analyzer (解析モジュール)}:
+  マニュアル PDF を読み込み，LLM を用いて中間表現 (IR) を生成する。
+  ここではトークン制限への対策や，ハルシネーション抑制のための検証ロジックが含まれる。
+  \item \textbf{Synthesizer (合成モジュール)}:
+  IR を基に，OpenAPI 仕様書 (OAS) と操作フロー定義 (Flow) を決定論的に合成する。
+  \item \textbf{Injector (実装注入モジュール)}:
+  OpenAPI Generator によって出力されたサーバコードに対し，物理デバイス操作のためのドライバロジックを自動的に注入する。
+\end{enumerate}
+
+以下，各プロセスの詳細設計について述べる。
+
+\section{マニュアル解析プロセス (Phase 1)}
+マニュアルは数百ページに及ぶ場合があり，LLM のコンテキストウィンドウ（入力トークン制限）を超える可能性がある。
+また，一度に大量の情報を入力すると，LLM の注目（Attention）が散漫になり，重要な操作手順を見落とすリスクがある。
+これに対処するため，本システムでは以下の「分割・要約・統合」アプローチを採用した。
+
+\subsection{チャンク分割と要約}
+入力されたマニュアルテキストを，一定文字数（本実装では 12,000 文字）ごとのチャンクに分割する。
+文脈の分断を防ぐため，チャンク間には 800 文字のオーバーラップ（重複領域）を設けている。
+各チャンクは LLM に順次入力され，以下のプロンプトによって「操作手順に関連する部分」のみが要約（Summarization）される。
+
+\begin{itemize}
+  \item \textbf{抽出対象}: 物理ボタンの操作手順（どのボタンを，どの順序で押すか）。
+  \item \textbf{除外対象}: 状態確認（Status Polling），条件分岐，センサ連動などの複雑なロジック。
+\end{itemize}
+
+\subsection{中間表現の生成と制約}
+全チャンクの要約が完了した後，それらを統合して最終的な中間表現（IR）を生成する。
+この際，システムプロンプトにおいて以下の制約を課すことで，出力の品質を担保している。
+
+\begin{itemize}
+  \item \textbf{役割定義}: 「あなたは家電マニュアルから操作手順のみを抽出するエンジニアである」と定義。
+  \item \textbf{翻訳・言い換えの禁止}: ボタンラベルはデバイスマップ（\texttt{switchbot.map.json}）に定義されたものと完全に一致させ，LLM による勝手な翻訳（例: "Power Button" $\to$ "電源ボタン"）を禁止する。
+  \item \textbf{出力形式の固定}: JSON 以外の解説文（Markdown のコードフェンス等）を含まない単一の JSON オブジェクトとして出力させる。
+\end{itemize}
+
+\section{仕様合成と検証 (Phase 2)}
+LLM が生成した IR は，TypeScript で実装されたバリデータによって検証された後，OpenAPI 仕様へと変換される。
+
+\subsection{バリデーションロジック}
+生成された IR に対し，以下の整合性チェックを行う。
+
+\begin{itemize}
+  \item \textbf{ラベル存在確認}: IR 内で使用されているボタンラベルが，デバイスマップに実在するか。
+  \item \textbf{モード整合性確認}: デバイスマップで「押す操作のみ (pressMode)」と定義されているボタンに対し，「ON/OFF 操作」を割り当てていないか。
+\end{itemize}
+
+これらのチェックにより，LLM が存在しないボタンを操作しようとしたり，物理的に不可能な操作を定義したりするエラーを未然に防ぐ。
+
+\subsection{テンプレート適用による仕様化}
+検証を通過した IR は，テンプレートを用いて OpenAPI 仕様書（JSON/YAML）に変換される。
+API の各エンドポイント（操作）に対し，正常系（200 OK）だけでなく，
+認証エラー（401），デバイス未検出（404），サービス利用不可（503）などの
+標準的なエラーレスポンス定義を一律で適用する。
+これにより，LLM に記述させることなく，プロダクションレベルの堅牢な API 定義を自動生成している。
+
+\section{コード生成とロジック注入 (Phase 3)}
+最終的なサーバコードの構築は，OpenAPI Generator によるスタブ生成と，本システム独自のロジック注入によって行われる。
+
+\subsection{スタブコード生成}
+まず，生成された OpenAPI 仕様を入力として \texttt{openapi-generator-cli} を実行し，Python (Flask) のサーバコードを生成する。
+生成時には，本システム専用の Mustache テンプレートを適用し，
+コントローラ（\texttt{default\_controller.py}）内の各関数に，後処理のための「マーカー（目印）」を埋め込む。
+具体的には，各 API 関数の冒頭と末尾に \texttt{\# [AUTOIOT-FUNCTION-BEGIN operationId]} といったコメント行が出力されるように設計している。
+
+\subsection{ドライバロジックの注入 (Implementation Injection)}
+スタブ生成後，本システムの \texttt{Injector} モジュールがコントローラファイルを解析し，
+マーカーで囲まれた領域に対して，操作フロー定義（\texttt{switchbot\_flow.json}）に基づいた Python コードを自動生成して上書き（注入）する。
+注入されるコードには，以下の機能がハードコードされた状態で埋め込まれる。
+
+\begin{enumerate}
+  \item \textbf{SwitchBot ドライバの呼び出し}:
+  定義されたデバイス ID に基づき，\texttt{bot.press()} や \texttt{bot.turn\_on()} を順次実行する処理。
+  \item \textbf{実行時のモード検証}:
+  Python コードレベルでも `if mode == 'pressMode'` といった条件分岐を挿入し，定義と矛盾する操作が行われないよう実行時にもガードをかける。
+  \item \textbf{ステータスコードのマッピング}:
+  SwitchBot API が返す独自のエラーコード（例: 161 デバイスオフライン）を，
+  Web API 標準の HTTP ステータスコード（例: 503 Service Unavailable）に変換する関数 \texttt{\_status\_to\_http} を展開する。
+\end{enumerate}
+
+この「マーカーベースの注入方式」を採用することで，
+OpenAPI Generator が生成するボイラープレート（ルーティングや型定義）の恩恵を受けつつ，
+中身のロジックだけを安全かつ確実に差し替えることが可能となっている。
