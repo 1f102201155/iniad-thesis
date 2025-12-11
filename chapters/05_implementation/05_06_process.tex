@@ -1,0 +1,49 @@
+\section{実行プロセスと生成物の変遷}
+\label{sec:impl_process}
+
+本節では，実装したシステムが実際にどのように機能するかを，具体的な家電操作シナリオを用いて検証する。
+例題として，一般的な全自動洗濯機の「標準コースでの洗濯開始」操作を取り上げる。
+対象とするマニュアルには，「電源ボタンを押し，表示が点灯するのを待ってから，スタートボタンを押す」という手順が記述されているものとする。
+
+以下に，このタスクを処理する際のデータの変遷を，4 つのステップに分けて示す。
+
+\subsection{Step 1: デバイスマップの作成 (Preparation)}
+まず，開発者は \texttt{init-bot-map} コマンドを実行し，SwitchBot API から取得したデバイス一覧を基に \texttt{switchbot.map.json} の雛形を生成する。
+その後，物理的に取り付けた Bot と，マニュアル上のボタン名の対応関係を定義する（Fig.~\ref{fig:example_map}）。
+
+\input{figures/code_map_example}
+
+このマップファイルにより，物理的な ID は「電源ボタン」「スタートボタン」という人間可読なラベルに抽象化される。
+
+\subsection{Step 2: マニュアル解析と IR 生成 (Analyzer)}
+次に，マニュアルテキストと上記のマップを入力として\texttt{generate-doc} コマンドを実行する。
+LLM はマニュアルの記述を解析し，「電源ボタンを押す」$\to$「スタートボタンを押す」というシーケンスを抽出する。
+この結果は，以下のような中間表現 (IR) として構造化される。
+
+\begin{itemize}
+  \item \textbf{OpenAPI 定義 (\texttt{openapi.json})}:
+  操作のエンドポイントとして \texttt{POST /washing-machine/start} が定義される。
+  \item \textbf{操作フロー定義 (\texttt{switchbot\_flow.json})}:
+  上記エンドポイントに対応する \texttt{operationId: "startMachine"} に対して，
+  Fig.~\ref{fig:example_flow} に示すステップ配列が生成される。
+\end{itemize}
+
+\input{figures/code_flow_example}
+
+\subsection{Step 3: コード生成と実装注入 (Synthesizer \& Injector)}
+続いて，\texttt{generate-api} コマンドにより Flask サーバのスタブが生成され，
+\texttt{implement} コマンドによって制御ロジックが注入される。
+Injector は \texttt{switchbot\_flow.json} を読み込み，ラベル「電源ボタン」を物理 ID \texttt{"E16A82C65393"}等 に解決した上で，
+Fig.~\ref{fig:example_code} のような Python コードをコントローラ内に展開する
+
+\input{figures/code_py_example}
+
+このプロセスは決定論的であり，生成されるコードは常に構文的に正しいことが保証される。
+
+\subsection{Step 4: 実行と動作確認}
+生成されたサーバを起動し，クライアントから \texttt{/washing-machine/start} にリクエストを送信すると，
+プログラムは定義された順序に従って SwitchBot Cloud API を呼び出す。
+その結果，物理空間にある 2 つの Bot が順次動作し，洗濯機のボタンが物理的に押下され，運転が開始される。
+
+以上のプロセスにより，マニュアルの入力から物理デバイスの操作に至るまでの一連の流れが，
+人手によるコーディングなしに自動化されていることが確認できる。

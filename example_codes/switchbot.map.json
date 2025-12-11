@@ -1,0 +1,14 @@
+{
+  "devices": [
+    {
+      "device_id": "E16A82C65393", 
+      "label": "電源ボタン",
+      "mode": "pressMode"
+    },
+    {
+      "device_id": "E16A82C65394", 
+      "label": "スタートボタン",
+      "mode": "pressMode"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+\section{実装アプローチの概要}
+\label{sec:impl_overview}
+
+本システムは，Node.js (TypeScript) で実装された CLI ツール \texttt{auto-iot} として構築されている。
+本ツールは以下の 4 つのサブコマンドを提供しており，これらを順次実行することで API の生成を行う。
+
+\begin{itemize}
+    \item \texttt{init-bot-map}: SwitchBot API からデバイス一覧を取得し，物理デバイスと操作のマッピングファイルの雛形を生成する。
+    \item \texttt{generate-doc}: マニュアルを解析し，API 仕様と操作フローを含む中間表現 (IR) を生成する。
+    \item \texttt{generate-api}: OpenAPI Generator を呼び出し，Flask サーバのスタブコードを生成する。
+    \item \texttt{implement}: 生成されたスタブコードに対し，具体的な制御ロジックを注入する。
+\end{itemize}
+
+全体の実装プロセスは，開発者が行う準備フェーズと，ツールによる 3 つの自動生成フェーズ（解析・合成・注入）によって構成される。
+
+\begin{enumerate}
+  \item \textbf{Preparation (準備フェーズ)}:
+  \texttt{init-bot-map} コマンドが担当する。
+  開発者はまず本コマンドを実行して \texttt{switchbot.map.json} の雛形を生成し，
+  物理的な SwitchBot デバイス（Bot）がどの家電のどのボタンに取り付けられているか（例: 照明の ON ボタン，炊飯器のスタートボタン）を手動で記述する。
+  このマッピング情報は，後続のフェーズで LLM が操作対象を特定するための正解データ（Ground Truth）として機能する。
+
+  \item \textbf{Analyzer (解析フェーズ)}:
+  \texttt{generate-doc} コマンドが担当する。
+  入力されたマニュアルを LLM (OpenAI API) を用いて解析し，
+  操作手順を抽出して中間表現 (IR) を生成する。
+  ここでは，幻覚 (Hallucination) のリスクを排除するため，
+  プログラムコードそのものではなく，厳密なスキーマを持つ JSON データのみを出力させる。
+  
+  \item \textbf{Synthesizer (合成フェーズ)}:
+  \texttt{generate-api} コマンドが担当する。
+  OpenAPI Generator を用いてサーバサイドのスタブコード (Flask) を生成する。
+  この際，独自にカスタマイズした Mustache テンプレートを適用することで，
+  後続の処理でロジックを注入するための「マーカー (Marker)」をコード内に埋め込む。
+  
+  \item \textbf{Injector (注入フェーズ)}:
+  \texttt{implement} コマンドが担当する。
+  生成されたスタブコードに対し，IR に含まれる操作フロー定義に基づいて
+  具体的な制御ロジックを決定論的に注入する。
+  本研究では，この手法を \textbf{「マーカーベース注入 (Marker-based Injection)」} と呼び，
+  構文エラーのない安全な実装を実現する核となる技術として位置づけている。
+\end{enumerate}
+
+次節以降では，これら各フェーズにおける詳細な実装ロジックについて述べる。

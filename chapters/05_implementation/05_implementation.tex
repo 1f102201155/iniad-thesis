@@ -5,16 +5,15 @@
 本システムは TypeScript (Node.js) で開発された CLI ツールであり，
 LLM の推論制御からコード生成，ロジック注入までを一貫して実行するよう実装されている。
 
-以下では，まず開発環境とプロジェクト構成について述べ，
+以下では，まず開発環境について述べ，
 次にシステムの中核となる実装アプローチの概要を説明する。
 その後，マニュアル解析，コード生成，ドライバ実装の各フェーズにおける詳細な実装ロジックを，
 実際のソースコードを示しながら解説し，最後に実際の実行プロセスと生成物の変遷について述べる。
 
 \input{chapters/05_implementation/05_01_environment}  % 開発環境と技術選定
-% \input{chapters/05_implementation/05_02_structure}    % プロジェクト構成
-\input{chapters/05_implementation/05_03_overview}     % 実装アプローチの概要（抽象）
-\input{chapters/05_implementation/05_04_analysis}     % マニュアル解析とIR生成の詳細 (doc.ts)
-\input{chapters/05_implementation/05_05_generation}   % コード生成とロジック注入の詳細 (generator/implement.ts)
-\input{chapters/05_implementation/05_06_driver}       % サーバサイドドライバの実装 (Python)
-\input{chapters/05_implementation/05_07_process}      % 実行プロセスと生成物の変遷（具体）
-\input{chapters/05_implementation/05_08_summary}      % まとめ
+\input{chapters/05_implementation/05_02_overview}     % 実装アプローチの概要（抽象）
+\input{chapters/05_implementation/05_03_analysis}     % マニュアル解析とIR生成の詳細 (doc.ts)
+\input{chapters/05_implementation/05_04_generation}   % コード生成とロジック注入の詳細 (generator/implement.ts)
+\input{chapters/05_implementation/05_05_driver}       % サーバサイドドライバの実装 (Python)
+\input{chapters/05_implementation/05_06_process}      % 実行プロセスと生成物の変遷（具体）
+\input{chapters/05_implementation/05_07_summary}      % まとめ

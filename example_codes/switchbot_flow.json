@@ -1,0 +1,4 @@
+"steps": [
+  { "type": "press", "targetLabel": "電源ボタン" },
+  { "type": "press", "targetLabel": "スタートボタン" }
+]

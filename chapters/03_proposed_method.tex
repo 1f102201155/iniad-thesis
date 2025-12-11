@@ -23,9 +23,10 @@
 
 \begin{figure}[tb]
   \begin{center}
-    \includegraphics[width=0.95\textwidth]{figures/application_overview.png}
+    \includegraphics[width=0.5\textwidth]{figures/application_overview.png}
   \end{center}
-  \caption{}\label{fig:system_flow}
+  \caption{}
+  \label{fig:system_flow}
 \end{figure}
 
 \section{中間表現 (Intermediate Representation; IR) の導入}
@@ -94,11 +95,32 @@ Phase 2 で生成したフロー定義を読み込んで実行する汎用的な
 これにより，開発者は一切のコーディングを行うことなく，マニュアルの内容を反映した IoT API サーバを手に入れることができる。
 
 \section{デバイスマップによる物理抽象化}
+第\ref{sec:switchbot_background}節で述べた通り，SwitchBot Bot と Cloud API を利用することで，
+通信機能を持たないレガシー家電であっても，物理ボタンへの後付け設置によって API 経由での制御が可能となる。
+本研究では，この「物理操作の API 化」という利点を活かすことで，
+マニュアルから単に仕様書を作成するだけでなく，実際に物理デバイスを操作可能なシステムを構築する。
+
 家電の種類やメーカーによって，操作に必要な SwitchBot デバイスの構成は異なる（例：物理ボタンを押す「ボット」，赤外線を飛ばす「ハブ」など）。
 本手法では，これらの物理デバイス構成を \texttt{switchbot.map.json} という定義ファイルに抽象化して入力する。
 
-このマップファイルには，各デバイスの ID と，それに対応する一意な「ラベル（Label）」が定義される。
-LLM はこの「ラベル」のみを認識して操作手順を組み立てるため，
-生成される API 仕様は物理的なデバイス ID（MAC アドレス等）から分離され，高い移植性を持つ。
-また，マップファイル内でデバイスの動作モード（\texttt{pressMode} / \texttt{switchMode}）を指定することで，
-LLM が生成すべき操作タイプ（押すだけか，ON/OFF 指定が必要か）を制約チェック時に検証することも可能となっている。
+しかし，マニュアルに記述されている「ボタン名（ラベル）」と，
+実際の API 制御に必要な「デバイス ID」は直接対応していない。
+そこで本手法では，両者を仲介する抽象化レイヤとして \textbf{「デバイスマップ」} を導入する。
+
+\subsection{デバイスマップの定義構造}
+デバイスマップ (\texttt{switchbot.map.json}) は，
+家電の「機能的なラベル」と「物理的なデバイス情報」の対応関係を定義した JSON ファイルである。
+このマップにより，以下の 2 点の抽象化を実現している。
+
+\begin{enumerate}
+  \item \textbf{ID の隠蔽とラベル解決}:
+  LLM は「電源ボタン」「スタート」といった意味的なラベルのみを扱って操作フローを生成する。
+  システムは実行時にこのマップを参照し，ラベルに対応する物理デバイス ID（例: \texttt{E16A82C65393}）へと変換する。
+  これにより，LLM の出力は特定のハードウェア環境に依存しない汎用的なものとなる。
+
+  \item \textbf{動作モードの制約}:
+  各デバイスに対して，第\ref{sec:switchbot_background}節で説明した Bot の動作モード
+  (\texttt{pressMode} / \texttt{switchMode}) をマップ上で定義する。
+  システムはこの定義に基づき，LLM が生成した操作タイプ（\texttt{press} なのか \texttt{on/off} なのか）が
+  物理的に実行可能であるかを検証（バリデーション）する。
+\end{enumerate}

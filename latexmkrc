@@ -1,5 +1,5 @@
 @default_files = ("thesis");
-$latex = 'platex -halt-on-error';
+$latex = 'platex -halt-on-error -shell-escape';
 $bibtex = 'pbibtex';
 $dvipdf = 'dvipdfmx %O -o %D %S';
 $makeindex = 'mendex %O -o %D %S';

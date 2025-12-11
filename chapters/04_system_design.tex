@@ -6,11 +6,9 @@
 LLM と決定論的アルゴリズムを密に連携させることで，マニュアル入力からコード生成までを実行する。
 
 \section{ソフトウェア・アーキテクチャ}
-\figtodo
 システムの全体構成を図\ref{fig:architecture}に示す。
 本システムは以下の 3 つのモジュールによって構成される。
 
-\needrewrite
 \begin{enumerate}
   \item \textbf{Analyzer (解析モジュール)}:
   マニュアル PDF を読み込み，LLM を用いて中間表現 (IR) を生成する。
@@ -87,9 +85,9 @@ API の各エンドポイント（操作）に対し，正常系（200 OK）だ�
   定義されたデバイス ID に基づき，\texttt{bot.press()} や \texttt{bot.turn\_on()} を順次実行する処理。
   \item \textbf{実行時のモード検証}:
   Python コードレベルでも `if mode == 'pressMode'` といった条件分岐を挿入し，定義と矛盾する操作が行われないよう実行時にもガードをかける。
-  \item \textbf{ステータスコードのマッピング}:
-  SwitchBot API が返す独自のエラーコード（例: 161 デバイスオフライン）を，
-  Web API 標準の HTTP ステータスコード（例: 503 Service Unavailable）に変換する関数 \texttt{\_status\_to\_http} を展開する。
+  \item \textbf{エラーハンドリングの集約}:
+  SwitchBot API が返す独自のエラーコード（例: 161 デバイスオフライン）や HTTP ステータスコードへの変換ロジックはドライバ層に集約し，
+  注入するコードからは共通のエラー生成メソッドを呼び出すだけの簡潔な構成とする。
 \end{enumerate}
 
 この「マーカーベースの注入方式」を採用することで，

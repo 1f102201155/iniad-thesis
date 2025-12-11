@@ -1,0 +1,32 @@
+\section{サーバサイドドライバの実装}
+\label{sec:impl_driver}
+
+生成されたコントローラから呼び出される物理デバイス制御層として，
+Python モジュール \texttt{switchbot\_driver.py} を実装した。
+本ドライバは，SwitchBot Cloud API v1.1 \cite{SwitchBotCloudAPI} との通信をカプセル化し，
+上位レイヤに対して抽象化された操作インターフェースを提供する役割を担う。
+
+\subsection{認証と署名生成}
+SwitchBot API へのリクエストには，HMAC-SHA256 アルゴリズムによる署名が必要となる。
+本ドライバは，環境変数から取得したトークンとシークレットキーを用い，
+リクエストごとに \texttt{nonce}（使い捨て乱数）とタイムスタンプを含む署名を動的に生成し，
+HTTP ヘッダに付与して送信する実装となっている。
+
+\subsection{操作の抽象化}
+SwitchBot Cloud API を直接利用する場合，デバイスに対してコマンドを送信するには，
+エンドポイント \texttt{/v1.1/devices/\{id\}/commands} に対し，
+\texttt{commandType}, \texttt{command}, \texttt{parameter} を含む JSON ペイロードを適切に構築して POST する必要がある。
+
+本ドライバは，これらの低レイヤな通信詳細を内部メソッド \texttt{send\_command} に集約・隠蔽し，
+上位レイヤ（生成されるコントローラ）に対しては，以下の直感的な Python メソッドとして機能を提供する。
+
+\begin{itemize}
+  \item \texttt{press()}: ボタンを押す（主に \texttt{pressMode} 用）
+  \item \texttt{turn\_on()}: スイッチを ON にする（\texttt{switchMode} 用）
+  \item \texttt{turn\_off()}: スイッチを OFF にする（\texttt{switchMode} 用）
+\end{itemize}
+
+Injector が生成するコードは，これらのメソッドを順次呼び出すだけでよいため，
+HTTP 通信の詳細や認証ロジックを意識する必要がない設計となっている。
+また，API のレート制限（Rate Limit）を考慮し，
+リクエスト間隔を制御するスロットリング機能もドライバ内部に実装している。
