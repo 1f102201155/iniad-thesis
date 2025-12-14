@@ -1,0 +1,101 @@
+\section*{A. CLI コマンドリファレンス}
+本研究で開発した CLI ツール \texttt{auto-iot} の主要コマンドおよびその仕様を以下に示す。
+
+\subsection*{A.1 init-bot-map}
+SwitchBot API と通信を行い、アカウントに紐付いている物理デバイスの一覧を取得して、マッピング定義ファイルの雛形 (\texttt{switchbot.map.json}) を生成する。
+
+\begin{verbatim}
+$ auto-iot init-bot-map [options]
+\end{verbatim}
+
+\noindent \textbf{Options:}
+\begin{description}
+  \item[\texttt{-d, --output-dir <dir>}] \hfill \\
+  出力先のディレクトリを指定する。ファイル名は \texttt{switchbot.map.json} で固定される。(デフォルト: \texttt{.})
+  
+  \item[\texttt{-c, --conflict <mode>}] \hfill \\
+  同名のファイルが既に存在する場合の挙動を指定する。
+  \begin{itemize}
+    \item \texttt{overwrite}: 上書きする (デフォルト)。
+    \item \texttt{add}: 既存のファイルに新しいデバイスを追記・マージする。
+    \item \texttt{skip}: 生成をスキップする。
+  \end{itemize}
+\end{description}
+
+\subsection*{A.2 generate-doc (Analyzer)}
+マニュアル (PDF/テキスト) を解析し、中間表現 (IR) および OpenAPI 仕様書を生成する。
+\texttt{--prompt} オプション等を使用することで、生成時の追加指示を与えることが可能である。
+
+\begin{verbatim}
+$ auto-iot generate-doc [options]
+\end{verbatim}
+
+\noindent\textbf{Options:}
+\begin{description}
+  \item[\texttt{--doc <file>}] \hfill \\
+  \textbf{[必須]} 解析対象のマニュアルファイルのパス (PDF またはテキスト)。
+  
+  \item[\texttt{--map <file>}] \hfill \\
+  \textbf{[必須]} \texttt{init-bot-map} で作成したデバイスマップのパス。
+  
+  \item[\texttt{--base <file>}] \hfill \\
+  既存の API 仕様書がある場合、それをベースとして読み込む (省略可)。
+  
+  \item[\texttt{-p, --prompt <text>}] \hfill \\
+  追加の指示プロンプトを文字列で指定する (省略可)。
+  
+  \item[\texttt{--prompt-file <file>}] \hfill \\
+  追加の指示プロンプトを記述したテキストファイルのパス (省略可)。
+  
+  \item[\texttt{-o, --output-dir <dir>}] \hfill \\
+  生成物 (\texttt{openapi.json}, \texttt{switchbot\_flow.json} 等) を保存するディレクトリ。
+\end{description}
+
+\subsection*{A.3 generate-api (Synthesizer)}
+OpenAPI 仕様書を入力とし、OpenAPI Generator を用いて API サーバのコードを生成する。
+\texttt{--with-markers} オプションを指定することで、ロジック注入用マーカーを含んだコードが生成される。
+
+\begin{verbatim}
+$ auto-iot generate-api [options]
+\end{verbatim}
+
+\noindent \textbf{Options:}
+\begin{description}
+  \item[\texttt{-i, --input <path>}] \hfill \\
+  \textbf{[必須]} 入力となる OpenAPI 仕様書 (YAML) のパス。
+  
+  \item[\texttt{-o, --output <path>}] \hfill \\
+  \textbf{[必須]} コードを出力するディレクトリ。
+  
+  \item[\texttt{--with-markers}] \hfill \\
+  マーカー注入用テンプレートを使用して生成する (デフォルト: false)。本システムでは必須。
+  
+  \item[\texttt{-g, --generator <name>}] \hfill \\
+  使用するジェネレータ名 (例: \texttt{python-flask})。
+  
+  \item[\texttt{-c, --config <path>}] \hfill \\
+  OpenAPI Generator の設定ファイルパス。
+\end{description}
+
+\subsection*{A.4 implement (Injector)}
+操作フロー定義 (\texttt{switchbot\_flow.json}) を読み込み、各 \texttt{operationId} に対応するマーカー領域に制御ロジックを注入する。
+
+\begin{verbatim}
+$ auto-iot implement [options]
+\end{verbatim}
+
+\noindent \textbf{Options:}
+\begin{description}
+  \item[\texttt{--flow <file>}] \hfill \\
+  \textbf{[必須]} 操作フロー定義ファイルのパス。
+  
+  \item[\texttt{--root, --project-root <dir>}] \hfill \\
+  \path{openapi_server/} が含まれるプロジェクトルート (デフォルト: \texttt{.})。
+  
+  \item[\texttt{--strict}] \hfill \\
+  注入対象のマーカーが見つからない場合にエラーとして扱う (デフォルト: false)。
+  
+  \item[\texttt{--dry-run}] \hfill \\
+  書き込みを行わず、注入内容をプレビューする (デフォルト: false)。
+\end{description}
+

@@ -1,0 +1,120 @@
+\section*{B. プロンプト定義}
+本システムのマニュアル解析フェーズ (Analyzer) において、LLM (GPT-4o) に入力されるプロンプトの構成を示す。
+実装コード (\path{src/app/services/doc.ts}) より、システムプロンプト、ユーザー入力構成、およびチャンク要約時の指示を抜粋したものである。
+
+\subsection*{B.1 System Prompt}
+LLM の役割定義と、出力すべき中間表現 (IR) の JSON スキーマを厳密に定義している。ハルシネーション（幻覚）を防ぐため、OpenAPI を直接出力させず、独自の中間形式に限定している点が特徴である。
+
+\begin{tcblisting}{
+  breakable,
+  enhanced,
+  skin=enhancedlast,
+  colback=white,
+  colframe=black!50!white,
+  listing only,
+  title=System Prompt,
+}
+You are a senior engineer who extracts ONLY control operations from a home-appliance manual and outputs a minimal IR (Intermediate Representation) as a single JSON object
+
+Output requirements:
+- Output a SINGLE JSON object (no code fences).
+- DO NOT output OpenAPI here; output IR only: { info, operations, flow }.
+
+## IR schema (mandatory)
+{
+  "info": { "title"?: string, "version"?: string },
+  "operations": [
+    { "path": string, "method": "post"|"put"|"delete"|"get", "operationId": string,
+      "summary"?: string, "description"?: string,
+      "parameters"?: any[], "requestBody"?: any }
+  ],
+  "flow": {
+    "version"?: string,
+    "flows": [
+      { "operationId": string,
+        "steps": [ { "type": "press"|"on"|"off", "targetLabel": string, "holdMs"?: number, "delayAfterMs"?: number } ]
+      }
+    ]
+  }
+}
+
+## Strict rules
+- Exclude any status polling or state queries.
+- steps[*].type must be one of: press / on / off.
+- steps[*].targetLabel must EXACTLY match one of VALID_LABELS provided (do NOT translate or paraphrase).
+- If device mode is pressMode, use only "press"; if switchMode, use only "on"/"off".
+- Only include button operations that exist in switchbot.map.json; any label not in the map is strictly forbidden.
+\end{tcblisting}
+
+\subsection*{B.2 User Prompt (Initial Context)}
+解析対象となるデバイス情報（マップファイル）と、ユーザーからの追加指示、および既存の API 仕様書（存在する場合）をコンテキストとして与えるプロンプトである。ここで \texttt{VALID\_LABELS} を提示し、ラベルの表記揺れを抑制している。
+
+\begin{tcblisting}{ 
+  breakable,
+  enhanced,
+  skin=enhancedlast,
+  colback=white,
+  colframe=black!50!white,
+  listing only,
+  title=User Prompt (Intro)
+}
+Existing base spec (optional; integrate if helpful):
+{baseSpec}
+
+User request (optional):
+{promptText}
+
+switchbot.map.json:
+{botMapRaw}
+
+VALID_LABELS (use EXACTLY one of these; do NOT translate or paraphrase):
+- 電源ボタン (mode=pressMode)
+- スタート (mode=pressMode)
+...
+
+I will send the manual in several chunks. Do NOT output the final JSON until the last instruction.
+\end{tcblisting}
+
+\subsection*{B.3 Chunk Summarization Prompt}
+長大なマニュアルを分割（チャンク化）して入力する際、各チャンクに対して送信される要約指示である。ここでは最終的な JSON は出力させず、操作手順の抽出に専念させている。
+
+\begin{tcblisting}{ 
+  breakable,
+  enhanced,
+  skin=enhancedlast,
+  colback=white,
+  colframe=black!50!white,
+  listing only,
+  title=Summarization Instruction ,
+}
+Manual chunk {i}/{total}
+---
+{chunkText}
+
+From this chunk, summarize in 3-6 lines focusing on:
+- Which labeled buttons (by label) to press and in what order to achieve the intended operations.
+- Ignore any status polling, conditional branching, or sensor-dependent logic.
+Do NOT output the final JSON yet.
+\end{tcblisting}
+
+\subsection*{B.4 Final Instruction}
+全チャンクの要約が完了した後、最終的な JSON オブジェクトの生成を指示するプロンプトである。これまでの文脈を統合し、IR スキーマに適合した出力を強制する。
+
+\begin{tcblisting}{ 
+  breakable,
+  enhanced,
+  skin=enhancedlast,
+  colback=white,
+  colframe=black!50!white,
+  listing only,
+  title=Final Instruction,
+}
+Considering all of the above, output MINIMAL IR as SINGLE JSON object (no code fences).
+Format: { "info"?: {...}, "operations": [...], "flow": {...} }
+- Do NOT output OpenAPI here.
+- In "operations", list only the necessary endpoints (path, method=post is preferred, operationId, summary).
+- In "flow", create a 1:1 mapping with "operations": for each operationId, provide steps with {type, targetLabel}.
+- targetLabel must be an EXACT match from VALID_LABELS. Do NOT invent new labels.
+- If you are not certain which label to use, OMIT that operation/step rather than guessing.
+\end{tcblisting}
+

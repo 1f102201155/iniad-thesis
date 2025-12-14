@@ -8,12 +8,23 @@
 以下に，このタスクを処理する際のデータの変遷を，4 つのステップに分けて示す。
 
 \subsection{Step 1: デバイスマップの作成 (Preparation)}
+
 まず，開発者は \texttt{init-bot-map} コマンドを実行し，SwitchBot API から取得したデバイス一覧を基に \texttt{switchbot.map.json} の雛形を生成する。
-その後，物理的に取り付けた Bot と，マニュアル上のボタン名の対応関係を定義する（Fig.~\ref{fig:example_map}）。
+
+次に，物理的に SwitchBot Bot を家電に取り付ける。
+本実験における実際の設置状況を\textbf{図\ref{fig:bot_setup}}に示す。
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=0.7\linewidth]{figures/washing_machine_sample_img.jpg}
+  \caption{洗濯機への SwitchBot Bot 設置状況}
+  \label{fig:bot_setup}
+\end{figure}
+
+続いて，この物理的な Bot とマニュアル上のボタン名の対応関係を定義ファイルに記述する（図\ref{fig:example_map}）。
+この定義により，システムは「電源ボタン」というラベルを特定の物理デバイス ID に変換可能となる。
 
 \input{figures/code_map_example}
-
-このマップファイルにより，物理的な ID は「電源ボタン」「スタートボタン」という人間可読なラベルに抽象化される。
 
 \subsection{Step 2: マニュアル解析と IR 生成 (Analyzer)}
 次に，マニュアルテキストと上記のマップを入力として\texttt{generate-doc} コマンドを実行する。

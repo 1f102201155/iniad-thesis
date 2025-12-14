@@ -13,8 +13,12 @@
 \usepackage[dvipdfmx]{xcolor}
 \usepackage{tcolorbox}
 \usepackage{minted}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
 %\usepackage{geometry}
 %\geometry{left=30mm,right=30mm,top=35mm,bottom=30mm}
+
+\tcbuselibrary{listings,breakable,skins}
 
 %\documentclass[oneside]{suribt}% 本文が * ページ以下のときに (掲示に注意)
 \title{LLMとOpenAPI Generatorを用いた家電向けIoT APIの自動生成}
@@ -83,6 +87,6 @@ IoT サービス開発におけるプロトタイピングのコストを大幅�
 \bibliography{thesis.bib}  % 参考文献
 
 \appendix% ここから付録 %%%%% 付録 %%%%%%%
-\include{chapters/appendix} % 付録
+\include{chapters/appendix/appendix} % 付録
 
 \end{document}

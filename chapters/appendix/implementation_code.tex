@@ -1,0 +1,150 @@
+\section*{C. システムの主要実装コード}
+本システムの動作原理を支える重要なコンポーネントのソースコードを以下に抜粋する。
+
+\subsection*{C.1 SwitchBot ドライバ (\texttt{switchbot\_driver.py})}
+生成された API サーバから呼び出され、SwitchBot Cloud API との通信、署名生成、およびエラーハンドリングを担うドライバの実装である。環境変数から認証情報を読み込み、Bot クラスを通じて物理デバイスの操作を抽象化している。
+
+\begin{tcblisting}{
+  breakable,
+  enhanced,
+  skin=enhancedlast,
+  colback=white,
+  colframe=black!50!white,
+  listing only,
+  title=\path{switchbot_driver.py},
+}
+import os
+import json
+import time
+import hmac
+import uuid
+import base64
+import hashlib
+from urllib import request, error
+
+# 環境変数から設定を読み込み
+BASE_URL = os.getenv("SWITCHBOT_BASE_URL", "https://api.switch-bot.com")
+TOKEN = os.getenv("SWITCHBOT_TOKEN", "")
+SECRET = os.getenv("SWITCHBOT_SECRET", "")
+
+def _auth_headers() -> dict:
+    """APIリクエスト用の署名ヘッダを生成"""
+    if not TOKEN or not SECRET:
+        raise RuntimeError("SWITCHBOT_TOKEN or SWITCHBOT_SECRET is not set.")
+    nonce = str(uuid.uuid4())
+    t_ms = str(int(time.time() * 1000))
+    to_sign = (TOKEN + t_ms + nonce).encode("utf-8")
+    sign = hmac.new(SECRET.encode("utf-8"), to_sign, hashlib.sha256).digest()
+    sign_b64 = base64.b64encode(sign).decode("ascii")
+    return {
+        "Authorization": TOKEN,
+        "sign": sign_b64,
+        "nonce": nonce,
+        "t": t_ms,
+        "Content-Type": "application/json; charset=utf8",
+    }
+
+class Bot:
+    """SwitchBot Botデバイスの操作インターフェース"""
+    def __init__(self, device_id: str, label: str = "", mode: str = None):
+        self.device_id = device_id
+        self.label = label
+        self.mode = mode
+
+    def press(self) -> dict:
+        return self.send_command("press")
+
+    def turn_on(self) -> dict:
+        return self.send_command("turnOn")
+
+    def turn_off(self) -> dict:
+        return self.send_command("turnOff")
+
+    def send_command(self, command: str, parameter: str = "default") -> dict:
+        url = f"/v1.1/devices/{self.device_id}/commands"
+        # 内部で _post_json を呼び出し (詳細は省略)
+        # ...
+        return {"ok": True, "httpStatus": 200, "response": {}, "device_id": self.device_id}
+
+    @classmethod
+    def make_error_response(cls, step_idx: int, device_id: str, res: dict):
+        """APIレスポンスから共通のエラー形式を生成"""
+        _sc = int((res.get("response") or {}).get("statusCode") or 0)
+        
+        # 1. SwitchBot固有のエラー (1xx系)
+        if _sc and _sc != 100:
+            msg = str((res.get("response") or {}).get("message")) or "SwitchBot error"
+            return {"ok": False, "error": {"code": _sc, "message": msg, "step": step_idx, "device_id": device_id}}, 500
+
+        # 2. HTTPレベルのエラー (401, 429等)
+        _http = int(res.get("httpStatus") or 0)
+        if _http == 401:
+            return {"ok": False, "error": {"code": 401, "message": "Unauthorized", "step": step_idx}}, 401
+            
+        return {"ok": False, "error": {"code": 0, "message": "Unknown error", "step": step_idx}}, 502
+\end{tcblisting}
+
+\subsection*{C.2 ロジック注入処理 (\path{src/app/services/implement.ts})}
+生成された Python コントローラコードに対し、マーカー (\texttt{\# [AUTOIOT...]}) を目印にして関数本体を決定論的に置換する処理の核心部分である。
+
+\begin{tcblisting} {
+  breakable,
+  enhanced,
+  skin=enhancedlast,
+  colback=white,
+  colframe=black!50!white,
+  listing only,
+  title=\path{src/app/services/implement.ts},
+}
+async function applyFlowToController(
+  projectRoot: string,
+  flow: NormalizedFlow,
+  opt: { strict: boolean; dryRun: boolean }
+) {
+  const controllerPath = path.join(projectRoot, "openapi_server/controllers/default_controller.py");
+  let src = await readText(controllerPath);
+
+  // 1) 必要なドライバの import 文をマージ
+  src = mergeImports(src, [
+    "from openapi_server.integrations.switchbot_driver import Bot"
+  ]);
+
+  // 2) 各 operationId に対応する関数本体を注入
+  for (const f of flow.flows) {
+    const region = findFunctionRegion(src, f.operationId);
+    if (!region) continue;
+
+    const { beginIdx, endIdx, indent } = region;
+    
+    // フロー定義から Python コードを合成 (Bot.find_by_id(...).press() 等)
+    const actions = resolveActions(f, flow.labels);
+    const body = renderFunctionBody(actions, indent);
+
+    // 文字列スライスによる置換 (Injection)
+    src = src.slice(0, beginIdx) + body + src.slice(endIdx);
+  }
+
+  if (!opt.dryRun) await writeText(controllerPath, src);
+}
+
+function findFunctionRegion(src: string, opId: string) {
+  // マーカーの検索
+  const beginMarker = `# [AUTOIOT-FUNCTION-BEGIN ${opId}]`;
+  const endMarker = `# [AUTOIOT-FUNCTION-END ${opId}]`;
+  
+  const b = src.indexOf(beginMarker);
+  const e = src.indexOf(endMarker);
+  if (b === -1 || e === -1) return null;
+
+  // インデントの取得と挿入位置の特定
+  const afterBegin = src.indexOf("\n", b);
+  const nextLineStart = afterBegin + 1;
+  const lineEnd = src.indexOf("\n", nextLineStart);
+  
+  // 次の行の空白からインデントを推測
+  const lineText = src.slice(nextLineStart, lineEnd);
+  const indent = lineText.match(/^(\s*)/)?.[1] ?? "";
+
+  return { beginIdx: nextLineStart, endIdx: e, indent };
+}
+\end{tcblisting}

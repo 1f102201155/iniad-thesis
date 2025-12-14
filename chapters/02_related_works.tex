@@ -129,8 +129,8 @@ SwitchBot 社のスマートホームデバイスを採用する。
 本節では，そのハードウェア特性と制御 API の仕様について述べる。
 
 \subsection{SwitchBot Bot の概要}
-SwitchBot Bot（以下，Bot）\cite{SwitchBotBot}は，家電の物理スイッチやボタン付近に貼り付けて使用する
-小型のロボットアームデバイスである\cite{SwitchBotWeb}。
+SwitchBot Bot（以下，Bot）\ref{fig:switchbot_bot_image}は，家電の物理スイッチやボタン付近に貼り付けて使用する
+小型のロボットアームデバイスである\cite{SwitchBotBot}。
 Bluetooth Low Energy (BLE) 通信によりスマホアプリやハブから制御され，
 アームを動かして物理的にボタンを押下することで，
 通信機能を持たない既存の家電（照明，炊飯器，給湯器など）を IoT 化することができる。
@@ -151,7 +151,7 @@ Bot には以下の 3 つの動作モードが存在する。
 
 \begin{figure}
     \begin{center}
-        \includegraphics[scale=0.3]{figures/SwitchBot_Bot_image.jpg}
+        \includegraphics[scale=0.2]{figures/SwitchBot_Bot_image.jpg}
     \end{center}
     \caption{SwitchBot Botの画像（SwitchBot Bot販売ページより引用）}
     \label{fig:switchbot_bot_image}
@@ -159,7 +159,7 @@ Bot には以下の 3 つの動作モードが存在する。
 
 
 \subsection{SwitchBot Cloud API}
-SwitchBot 社は，同社製品をインターネット経由で制御するための Web API (SwitchBot Cloud API) を公開している\cite{SwitchBotAPI}。
+SwitchBot 社は，同社製品をインターネット経由で制御するための Web API (SwitchBot Cloud API) を公開している\cite{SwitchBotCloudAPI}。
 開発者は HTTP リクエスト（GET/POST）を送信することで，
 デバイスの状態取得やコマンド送信を行うことができる。
 
