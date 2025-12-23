@@ -67,15 +67,16 @@ ECHONET Lite や Matter といった標準規格の策定が進められてい�
 \section{本研究のアプローチ}
 本研究では，大規模言語モデル（Large Language Model; LLM）の高い自然言語処理能力と
 コード生成能力を活用することで，IoT 機器統合における「専門知識の壁」を取り除くことを目指す。
-具体的には，IoT 機器の取扱説明書（PDF）を入力とするだけで，
-その機器を操作するための Web API（OpenAPI 仕様）と，
+具体的には，IoT 機器の取扱説明書（PDF）のみを入力として与えるだけで，
+物理ボタン操作デバイス（SwitchBot Bot）を介してその機器を操作するための Web API（OpenAPI 仕様）と，
 実際に動作するサーバ実装コードを全自動で生成するシステムを提案する。
 
 提案システムは，マニュアルから操作手順や通信仕様を抽出し，
 IoT 制御に特化した中間表現（Intermediate Representation; IR）を経て，
 標準的な REST API 定義である OpenAPI Specification (OAS) を生成する。
-さらに，OpenAPI Generator を用いてサーバサイドのコード（Flask）を生成することで，
-開発者はマニュアルを用意するだけで，即座に機器を Web API 経由で操作可能となる。
+さらに，OpenAPI Generator を用いてサーバサイドのコード（Flask）を生成し，
+SwitchBot を制御するロジックを自動的に組み込むことで，
+開発者はマニュアルを用意するだけで，即座に通信機能を持たない機器を Web API 経由で操作可能となる。
 
 \section{本研究の目的と成果}
 本研究の主な目的と貢献は以下の 2 点である。

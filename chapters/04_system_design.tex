@@ -72,7 +72,7 @@ API の各エンドポイント（操作）に対し，正常系（200 OK）だ�
 まず，生成された OpenAPI 仕様を入力として \texttt{openapi-generator-cli} を実行し，Python (Flask) のサーバコードを生成する。
 生成時には，本システム専用の Mustache テンプレートを適用し，
 コントローラ（\texttt{default\_controller.py}）内の各関数に，後処理のための「マーカー（目印）」を埋め込む。
-具体的には，各 API 関数の冒頭と末尾に \texttt{\# [AUTOIOT-FUNCTION-BEGIN operationId]} といったコメント行が出力されるように設計している。
+具体的には，各 API 関数の冒頭と末尾に \texttt{\# [AUTOIOT-FUNCTION-BEGIN operationId]} といったコメント行が出力されるように設計した。
 
 \subsection{ドライバロジックの注入 (Implementation Injection)}
 スタブ生成後，本システムの \texttt{Injector} モジュールがコントローラファイルを解析し，

@@ -6,9 +6,12 @@
 また，生成されるサーバサイドコードのターゲットとして，IoT 分野で広く利用され，
 ライブラリのエコシステムが豊富な Python (Flask) を採用した。
 
-具体的な開発環境および使用した主要ライブラリのバージョンを Table~\ref{tab:dev-env} に示す。
+具体的な開発環境および使用した主要ライブラリのバージョンを 表~\ref{tab:dev-env} に示す。
+特に \texttt{@openapitools/openapi-generator-cli} は，
+内部で Java 製の OpenAPI Generator (v7.17.0) をダウンロードして実行する仕組みとなっており，
+これを利用することで最新の OpenAPI 仕様 (v3.0.3) に準拠したコード生成を実現している。
 
-\begin{table}[h]
+\begin{table}[tb]
   \centering
   \caption{開発環境と主要ライブラリ}
   \label{tab:dev-env}
@@ -26,6 +29,3 @@
   \end{tabular}
 \end{table}
 
-特に \texttt{@openapitools/openapi-generator-cli} は，
-内部で Java 製の OpenAPI Generator (v7.17.0) をダウンロードして実行する仕組みとなっており，
-これを利用することで最新の OpenAPI 仕様 (v3.0.3) に準拠したコード生成を実現している。

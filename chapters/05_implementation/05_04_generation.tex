@@ -5,12 +5,11 @@ Phase 2 および Phase 3 にあたるコード生成とロジック注入は，
 OpenAPI Generator によるスタブ生成機能と，本システム独自の注入ロジックを組み合わせることで実現されている。
 
 \subsection{マーカー付きテンプレートによるスタブ生成 (Synthesizer)}
-Synthesizer フェーズ（\texttt{generate-api} コマンド）では，
-\texttt{src/app/services/generator.ts} が OpenAPI Generator を呼び出し，
+Synthesizer フェーズでは，OpenAPI Generator を呼び出し，
 Python (Flask) のサーバコードを生成する。
 
 通常の OpenAPI Generator は API 定義に基づいた空の関数（スタブ）のみを生成するが，
-本システムでは独自に拡張した Mustache テンプレート（\texttt{controller.mustache}）を使用している。
+本システムでは独自に拡張した Mustache テンプレートを使用している。
 このテンプレートには，以下のようなコメント形式のマーカー定義が含まれている。
 
 \begin{verbatim}
@@ -18,17 +17,16 @@ Python (Flask) のサーバコードを生成する。
 # [AUTOIOT-FUNCTION-END start_washing]
 \end{verbatim}
 
-このマーカーは，生成される \texttt{default\_controller.py} 内の各 API ハンドラ関数に埋め込まれ，
+このマーカーは，生成される API コントローラ内の各ハンドラ関数に埋め込まれ，
 後続の Injector が「どこにコードを挿入すべきか」を特定するためのアンカーとして機能する。
 
 \subsection{決定論的なロジック注入 (Injector)}
-Injector フェーズ（\texttt{implement} コマンド）は \texttt{src/app/services/implement.ts} に実装されており，
-以下の手順で動作する。
+Injector フェーズは注入モジュールに実装されており，以下の手順で動作する。
 
 \begin{enumerate}
   \item \textbf{操作フローの解決}:
-  LLM が生成した \texttt{switchbot\_flow.json} を読み込み，
-  各ステップの \texttt{targetLabel} から \texttt{switchbot.map.json} の物理デバイス IDを取得する。
+  LLM が生成した操作フロー定義を読み込み，
+  各ステップのターゲットラベルからデバイスマップ上の物理デバイス ID を取得する。
   この際，デバイスの動作モード（\texttt{pressMode} 等）と操作内容の整合性も再確認される。
 
   \item \textbf{Python コードの合成}:
