@@ -1,0 +1,58 @@
+\begin{figure}[tb]
+  \centering
+  \resizebox{\linewidth}{!}{
+    \begin{tikzpicture}[
+      node distance=1.2cm and 1.8cm,
+      module/.style={
+        rectangle, 
+        draw=black, 
+        thick, 
+        fill=gray!10, 
+        text width=2.5cm, 
+        minimum height=1.5cm, 
+        align=center, 
+        rounded corners=3pt,
+        font=\bfseries
+      },
+      data/.style={
+        rectangle, 
+        draw=none, 
+        text width=2.2cm, 
+        align=center, 
+        font=\small
+      },
+      arrow/.style={
+        -{Stealth[length=3mm]}, 
+        thick
+      },
+      lbl/.style={
+        midway,
+        above,
+        font=\small,
+        align=center
+      }
+    ]
+
+      % --- Nodes ---
+      % Inputs
+      \node[data] (input) {Manual PDF\\Device Map};
+
+      % Modules
+      \node[module, right=of input] (analyzer) {Analyzer\\(解析)};
+      \node[module, right=of analyzer] (synthesizer) {Synthesizer\\(合成)};
+      \node[module, right=of synthesizer] (injector) {Injector\\(注入)};
+
+      % Output
+      \node[data, right=of injector] (output) {Server Code\\(Python)};
+
+      % --- Arrows & Labels ---
+      \draw[arrow] (input) -- node[lbl] {Input} (analyzer);
+      \draw[arrow] (analyzer) -- node[lbl] {IR} (synthesizer);
+      \draw[arrow] (synthesizer) -- node[lbl] {OAS / Flow} (injector);
+      \draw[arrow] (injector) -- node[lbl] {Generate} (output);
+
+    \end{tikzpicture}
+  }
+  \caption{提案システムのモジュール構成とデータフロー}
+  \label{fig:module_architecture}
+\end{figure}

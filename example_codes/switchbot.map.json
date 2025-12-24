@@ -2,13 +2,17 @@
   "devices": [
     {
       "device_id": "E16A82C65393", 
-      "label": "電源ボタン",
-      "mode": "pressMode"
+      "label": "ボット0",
+      "appliance": "洗濯機",
+      "mode": "pressMode",
+      "button": "電源"
     },
     {
       "device_id": "E16A82C65394", 
-      "label": "スタートボタン",
-      "mode": "pressMode"
+      "label": "ボット1",
+      "appliance": "洗濯機",
+      "mode": "pressMode",
+      "button": "スタート"
     }
   ]
 }

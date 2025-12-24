@@ -1,4 +1,26 @@
-"steps": [
-  { "type": "press", "targetLabel": "電源ボタン" },
-  { "type": "press", "targetLabel": "スタートボタン" }
-]
+{
+  "version": "1.0",
+  "labels": {
+    "Bot_Power": {
+      "device_id": "E16A82C65393",
+      "mode": "pressMode",
+      "appliance": "洗濯機",
+      "button": "電源"
+    },
+    "Bot_Start": {
+      "device_id": "E16A82C65394",
+      "mode": "pressMode",
+      "appliance": "洗濯機",
+      "button": "スタート"
+    }
+  },
+  "flows": [
+    {
+      "operationId": "startWashing",
+      "steps": [
+        { "type": "press", "targetLabel": "ボット0" },
+        { "type": "press", "targetLabel": "ボット1" }
+      ]
+    }
+  ]
+}

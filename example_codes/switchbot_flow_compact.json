@@ -1,0 +1,11 @@
+{
+  "flows": [
+    {
+      "operationId": "startWashing",
+      "steps": [
+        { "type": "press", "targetLabel": "Bot_Power" },
+        { "type": "press", "targetLabel": "Bot_Start" }
+      ]
+    }
+  ]
+}

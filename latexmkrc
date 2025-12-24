@@ -9,5 +9,5 @@ $aux_dir = "latex.out";
 $pdf_previewer = "explorer.exe";
 $preview_continuous_mode = 1;
 $pvc_timeout = 1;
-$pvc_timeout_mins = 30;
-$sleep_time = 60;
+$pvc_timeout_mins = 60;
+$sleep_time = 30;

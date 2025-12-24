@@ -6,7 +6,7 @@
 LLM と決定論的アルゴリズムを密に連携させることで，マニュアル入力からコード生成までを実行する。
 
 \section{ソフトウェア・アーキテクチャ}
-本システムは以下の 3 つのモジュールによって構成される。
+本システムは，図\ref{fig:module_architecture}に示すように，データの変換と生成を担う以下の 3 つのモジュールによって構成される。
 
 \begin{enumerate}
   \item \textbf{Analyzer (解析モジュール)}:
@@ -18,6 +18,8 @@ LLM と決定論的アルゴリズムを密に連携させることで，マニ�
   OpenAPI Generator によって出力されたサーバコードに対し，物理デバイス操作のためのドライバロジックを自動的に注入する。
 \end{enumerate}
 
+\input{figures/module_architecture}
+
 以下，各プロセスの詳細設計について述べる。
 
 \section{マニュアル解析プロセス (Phase 1)}
@@ -26,13 +28,16 @@ LLM と決定論的アルゴリズムを密に連携させることで，マニ�
 これに対処するため，本システムでは以下の「分割・要約・統合」アプローチを採用した。
 
 \subsection{チャンク分割と要約}
-入力されたマニュアルテキストを，一定文字数（本実装では 12,000 文字）ごとのチャンクに分割する。
-文脈の分断を防ぐため，チャンク間には 800 文字のオーバーラップ（重複領域）を設けている。
-各チャンクは LLM に順次入力され，以下のプロンプトによって「操作手順に関連する部分」のみが要約（Summarization）される。
+入力されたマニュアルテキストを，LLM のコンテキストウィンドウ制限に収まる一定サイズのチャンクに分割する。
+単に分割しただけでは，境界部分で文脈が分断され，重要な操作手順の情報が失われるリスクがある。
+そのため，本手法ではチャンク間に一定のオーバーラップ（重複領域）を設けることで，文脈の連続性を担保している。
+
+各チャンクは LLM に順次入力され，プロンプトによって「操作手順に関連する部分」のみが要約（Summarization）される。
+本システムにおける要約の方針は以下の通りである。
 
 \begin{itemize}
   \item \textbf{抽出対象}: 物理ボタンの操作手順（どのボタンを，どの順序で押すか）。
-  \item \textbf{除外対象}: 状態確認（Status Polling），センサ連動などのSwitchBot Botでは実現不可なロジック。
+  \item \textbf{除外対象}: 状態確認（Status Polling），センサ連動などの SwitchBot Bot では実現不可なロジック。
 \end{itemize}
 
 \subsection{中間表現の生成と制約}
@@ -72,7 +77,24 @@ API の各エンドポイント（操作）に対し，正常系（200 OK）だ�
 まず，生成された OpenAPI 仕様を入力として \texttt{openapi-generator-cli} を実行し，Python (Flask) のサーバコードを生成する。
 生成時には，本システム専用の Mustache テンプレートを適用し，
 コントローラ（\texttt{default\_controller.py}）内の各関数に，後処理のための「マーカー（目印）」を埋め込む。
-具体的には，各 API 関数の冒頭と末尾に \texttt{\# [AUTOIOT-FUNCTION-BEGIN operationId]} といったコメント行が出力されるように設計した。
+具体的には，図 ~\ref{fig:example_flow_compact}のように、各 API 関数の冒頭と末尾へ \texttt{\# [AUTOIOT-FUNCTION-BEGIN operationId]} といったコメント行が出力されるように設計した。
+
+\begin{figure}[tb]
+  \centering
+  \begin{tcolorbox}[
+    width=\linewidth,
+    colback=black!2!white,
+    colframe=gray!60,
+    boxrule=0.4pt,
+    arc=2pt,
+    left=2mm, right=2mm, top=1mm, bottom=1mm
+  ]
+  \inputminted[fontsize=\footnotesize, breaklines, tabsize=2]{python}{example_codes/marker.py}
+  \end{tcolorbox}
+  \caption{実際にマーカーが埋め込まれる例}
+  \label{fig:example_flow_compact}
+\end{figure}
+
 
 \subsection{ドライバロジックの注入 (Implementation Injection)}
 スタブ生成後，本システムの \texttt{Injector} モジュールがコントローラファイルを解析し，
