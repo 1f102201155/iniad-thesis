@@ -19,7 +19,18 @@
 各機器が提供する API (Application Programming Interface) を適切に利用し，
 システム間で連携させる技術が不可欠となっている。
 
+\clearpage
+
 \subsection{本研究が対象とするIoTシステム構成}
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/iot-basic-structure.jpg}
+  \caption{IoTの基本構成（直結デバイス／非直結デバイス＋ゲートウェイ／ネットワーク／サーバ）。
+  図は Seeds4biz「【徹底解説】IoTを構成する技術要素｜身体の機能に置き換えて考えてみよう」 の解説ページより引用\cite{SeedsIoTComponents}。}
+  \label{fig:iot-basic-structure}
+\end{figure}
+
 図\ref{fig:iot-basic-structure}に，スマートホームを含む一般的なIoTシステムの基本構成を示す。
 左側上段は \textbf{ネットワークへ直接接続可能なデバイス}（スマートフォンやPC，セルラー／Wi-Fi内蔵機器）であり，
 これらはクラウドと直接通信してサービスを利用する。
@@ -31,13 +42,6 @@
 本研究では，この一般構成を前提に，\emph{クラウドAPI層とデバイス／ハブ層の間}でのインタフェース記述（OpenAPI）と
 APIサーバ実装の自動生成に着目する。
 
-\begin{figure}[tb]
-  \centering
-  \includegraphics[width=.95\linewidth]{figures/iot-basic-structure.jpg}
-  \caption{IoTの基本構成（直結デバイス／非直結デバイス＋ゲートウェイ／ネットワーク／サーバ）。
-  図は Seeds4biz「【徹底解説】IoTを構成する技術要素｜身体の機能に置き換えて考えてみよう」 の解説ページより引用\cite{SeedsIoTComponents}。}
-  \label{fig:iot-basic-structure}
-\end{figure}
 
 しかし，IoT システムの構築と運用には，依然として高い技術的障壁が存在する。
 これらを統合して動作させるためには，物理層からアプリケーション層までを繋ぎ合わせるフルスタックな実装スキルが要求される。
@@ -46,13 +50,13 @@ APIサーバ実装の自動生成に着目する。
 これが新規サービス開発やシステム統合の参入障壁となっている。
 
 \section{現状の課題}
-IoT 機器の相互運用性（Interoperability）を確保するために，
+IoT 機器の相互運用性を確保するために，
 ECHONET Lite や Matter といった標準規格の策定が進められている\cite{ECHONETSpec,MatterSpec}。
 これらの規格に準拠した機器であれば，共通のインターフェースを通じて操作が可能である。
 
 しかし現実には，標準規格に対応していないレガシーな家電や，
 コスト制約により独自の簡易な通信仕様を採用した製品が市場には数多く存在する\cite{SpaceCore2024}。
-また，標準規格に対応している機器であっても，メーカー独自の機能（拡張仕様）については
+また，標準規格に対応している機器であっても，メーカー独自の機能については
 標準プロトコルでカバーしきれない場合が多い。
 
 こうした「規格外」の機器をシステムに統合するためには，
@@ -74,7 +78,7 @@ ECHONET Lite や Matter といった標準規格の策定が進められてい�
 提案システムは，マニュアルから操作手順や通信仕様を抽出し，
 IoT 制御に特化した中間表現（Intermediate Representation; IR）を経て，
 標準的な REST API 定義である OpenAPI Specification (OAS) を生成する。
-さらに，OpenAPI Generator を用いてサーバサイドのコード（Flask）を生成し，
+さらに，OpenAPI Generator を用いてサーバサイドのコードを生成し，
 SwitchBot を制御するロジックを自動的に組み込むことで，
 開発者はマニュアルを用意するだけで，即座に通信機能を持たない機器を Web API 経由で操作可能となる。
 
@@ -94,7 +98,7 @@ SwitchBot を制御するロジックを自動的に組み込むことで，
 
 \section{論文の構成}
 本論文の構成は以下の通りである。
-第2章では，非スマート家電の IoT 化（レトロフィット）手法と相互運用性の課題について整理し，
+第2章では，非スマート家電の IoT 化手法と相互運用性の課題について整理し，
 その解決策としての LLM を用いた仕様・コード生成技術および物理デバイス制御に関する関連研究について述べる。
 第3章では，提案手法のコンセプトである，マニュアルから API 仕様を自動生成するアプローチの概要について説明する。
 第4章では，提案手法を実現するためのシステム設計について述べ，データフローや各コンポーネントの役割を定義する。
