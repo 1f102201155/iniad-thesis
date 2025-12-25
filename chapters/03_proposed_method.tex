@@ -18,16 +18,16 @@
   OpenAPI Generator を用いてサーバのスタブコード（Flask）を生成し，その内部に Flow 定義に基づいた制御ロジックを注入する。
 \end{enumerate}
 
-この構成により，LLM 特有の「幻覚（Hallucination）」や「構文エラー」のリスクを最小限に抑えつつ，
-多様なフォーマットで記述されたマニュアルへの対応を実現している。
-
 \begin{figure}[tb]
   \begin{center}
-    \includegraphics[scale=0.35]{figures/application_overview.jpg}
+    \includegraphics[scale=0.3]{figures/application_overview.jpg}
   \end{center}
   \caption{提案システムフロー}
   \label{fig:system_flow}
 \end{figure}
+
+この構成により，LLM 特有の「幻覚（Hallucination）」や「構文エラー」のリスクを最小限に抑えつつ，
+多様なフォーマットで記述されたマニュアルへの対応を実現している。
 
 \section{デバイスマップによる物理抽象化}
 第\ref{sec:switchbot_background}節で述べた通り，物理操作デバイス（SwitchBot Bot）を利用することで，
