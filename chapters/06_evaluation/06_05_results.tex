@@ -10,7 +10,7 @@ GPT-4o は 30 回の試行中 28 回成功し、約 93.3\% という高い成功
 失敗の主な原因は、出力された JSON の形式不備（カンマの欠落やネスト構造の誤り）であり、
 複雑なスキーマ定義を遵守する能力に関しては、ハイエンドモデルである GPT-4o が優位であることが確認された。
 
-\begin{table}[htbp]
+\begin{table}[tb]
   \centering
   \caption{モデルごとの生成成功率}
   \label{tab:success_rate}
@@ -29,7 +29,7 @@ GPT-4o は 30 回の試行中 28 回成功し、約 93.3\% という高い成功
 生成に成功したケースを対象に、抽出された操作フロー（\texttt{steps}）の正確性を評価した。
 表\ref{tab:flow_accuracy_detail}に、True Positive (TP)、False Positive (FP)、False Negative (FN) の内訳および、それらに基づく適合率（Precision）、再現率（Recall）、F1 スコアを示す。
 
-\begin{table}[htbp]
+\begin{table}[tb]
   \centering
   \caption{操作フロー抽出の混同行列および精度評価}
   \label{tab:flow_accuracy_detail}
@@ -63,7 +63,7 @@ GPT-4o は 30 回の試行中 28 回成功し、約 93.3\% という高い成功
 GPT-4o-mini の平均一致率は 0.609 となり、GPT-4o (0.462) よりも高い一貫性を示した。
 GPT-4o は表現力が豊かである反面、試行ごとに操作名の命名（例: \texttt{turnOn} と \texttt{powerOn} の揺らぎなど）や手順の解釈が変動しやすい傾向があると考えられる。
 
-\begin{table}[htbp]
+\begin{table}[tb]
   \centering
   \caption{生成結果の一貫性（フロー一致率）}
   \label{tab:consistency}
@@ -82,7 +82,7 @@ GPT-4o は表現力が豊かである反面、試行ごとに操作名の命名�
 本実験環境においては、GPT-4o が約 23.6 秒、GPT-4o-mini が約 31.1 秒となり、GPT-4o の方が高速に処理を完了した。
 後述するトークン数の内訳に基づくと、GPT-4o-mini は出力トークン数が非常に多いため、生成にかかるレイテンシが増大したと考えられる。
 
-\begin{table}[htbp]
+\begin{table}[tb]
   \centering
   \caption{平均生成時間}
   \label{tab:generation_time}
@@ -100,7 +100,7 @@ GPT-4o は表現力が豊かである反面、試行ごとに操作名の命名�
 1回のドライバ生成プロセスにおける平均消費トークン数の内訳（入力プロンプト、出力完了、合計）を表\ref{tab:token_breakdown}に示す。
 一般に、軽量モデルである GPT-4o-mini はコスト効率に優れるとされるが、本研究においては、**GPT-4o の方がより少ないトークン数で処理を完了できる**という結果が得られた。
 
-\begin{table}[htbp]
+\begin{table}[tb]
   \centering
   \caption{平均消費トークン数の内訳 (Tokens/run)}
   \label{tab:token_breakdown}
